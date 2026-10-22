@@ -67,7 +67,8 @@ def evaluar(cfg, ruta_banco, top_k=None):
             "esperado": esp, "clase": clase, "veredicto": r["veredicto"],
             "citados": sorted(citados), "recuperados": sorted(recuperados),
             "bloqueados": bloqueados, "plazos": r["plazos"], "notas": r["notas"],
-            "fuentes": r["fuentes"],
+            "fuentes": r["fuentes"], "grupos": r.get("grupos", []),
+            "puentes": r.get("puentes", []),
         })
 
     def n(clase):
@@ -116,7 +117,9 @@ def _enlace(src, incluir_ancla=True):
     import re as _re
     url = src.get("url", "")
     blq = src.get("bloque", "")
-    if incluir_ancla and _re.fullmatch(r"a\d+", blq or ""):
+    # Los ids del BOE son "a245" (LEC, CP...) o "art1902" (Codigo Civil): ambos valen
+    # como ancla en la pagina consolidada. Los bis/ter usan otra numeracion.
+    if incluir_ancla and _re.fullmatch(r"(?:a|art)\d+", blq or ""):
         return f"{url}#{blq}"
     return url
 
@@ -170,9 +173,25 @@ def escribir_informe(cfg, resultado, ruta=None):
             L.append(f"> 🚫 **BLOQUEADO por el gate** (`{a['motivo']}`): {a['texto']}")
             L.append(f"> {a.get('detalle','')}")
             L.append("")
+        if f.get("grupos"):
+            L.append("- **Preceptos por norma:**")
+            for g in f["grupos"]:
+                arts = ", ".join(a["titulo_bloque"] or a["bloque"] for a in g["articulos"])
+                L.append(f"  - {g['titulo_norma']} → {arts}")
+            L.append("")
+        if f.get("puentes"):
+            L.append("- 🔗 **Puentes entre normas** (leídos del texto oficial):")
+            for p in f["puentes"]:
+                L.append(f"  - `{p['desde']}` art. {p['desde_art']} → **{p['hacia_nombre']}**")
+                L.append(f"    «{p['evidencia'][:200]}»")
+            L.append("")
         citadas = [a for a in f.get("afirmaciones", []) if a.get("ok")]
+        vistos_url = set()
         for src in f["fuentes"]:
             enlace = _enlace(src, cfg.get("informe", {}).get("incluir_enlace_oficial", True))
+            if enlace in vistos_url:
+                continue
+            vistos_url.add(enlace)
             L.append(f"- 📎 *{src['titulo_bloque'] or src['bloque']}* — {src['titulo_norma']}")
             L.append(f"  Fuente oficial: {enlace}")
         L.append("")

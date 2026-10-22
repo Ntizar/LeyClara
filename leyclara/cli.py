@@ -58,8 +58,17 @@ def cmd_estado(args):
         print(f"  {nid:>18}  {n:>5} arts  {tit[:60]}")
 
 
+def cmd_vectorial(args):
+    cfg = _cfg(args)
+    from . import vectorial
+    st = vectorial.construir(cfg, limite=args.limite)
+    print(f"\n== {st['embebidos']} artículos embebidos · {st['tokens']:,} tokens")
+
+
 def cmd_pregunta(args):
     cfg = _cfg(args)
+    if args.lexico:
+        cfg["recuperacion"]["modo"] = "lexico"
     if args.llm:
         r = resp_mod.responder_llm(cfg, args.texto, args.top)
     else:
@@ -70,17 +79,33 @@ def cmd_pregunta(args):
         return
 
     print(f"\n{ICONO.get(r['veredicto'],'')}  {r['veredicto']}  —  «{args.texto}»")
-    print(f"   modo: {r['modo']}\n")
+    print(f"   modo: {r['modo']} · recuperación: {cfg['recuperacion'].get('modo')}")
+    if r.get("normas_nombradas"):
+        print(f"   normas nombradas en la pregunta: {', '.join(r['normas_nombradas'])}")
+    print()
     for a in r["afirmaciones"]:
         marca = "✅" if a["ok"] else f"🚫 {a['motivo']}"
         print(f"  {marca}  {a['norma']} · {a['bloque']} · {a['texto']}")
         print(f'     «{a["cita"][:300]}{"…" if len(a["cita"])>300 else ""}»')
         print()
+    if r.get("puentes"):
+        print("  🔗 puentes entre normas (leídos del texto oficial):")
+        for p in r["puentes"]:
+            print(f"     {p['desde']} art.{p['desde_art']} → {p['hacia_nombre']} ({p['hacia']})")
+            print(f"       «{p['evidencia'][:180]}»")
+        print()
     if r["plazos"]:
         print("  Plazos citados: " + ", ".join(f"{p['cantidad']} {p['unidad']}" for p in r["plazos"]))
-    for f in r["fuentes"][: args.top or 5]:
-        ancla = f"#{f['bloque']}" if __import__("re").fullmatch(r"a\d+", f["bloque"] or "") else ""
-        print(f"  📎 {f['url']}{ancla}")
+    vistos = set()
+    for f in r["fuentes"]:
+        ancla = f"#{f['bloque']}" if __import__("re").fullmatch(r"(?:a|art)\d+", f["bloque"] or "") else ""
+        url = f"{f['url']}{ancla}"
+        if url in vistos:
+            continue
+        vistos.add(url)
+        print(f"  📎 {url}")
+        if len(vistos) >= (args.top or 5):
+            break
     for n in r["notas"]:
         print(f"  · {n}")
 
@@ -145,11 +170,16 @@ def main(argv=None):
     ps = sub.add_parser("estado", help="qué hay cargado")
     ps.set_defaults(func=cmd_estado)
 
+    pv = sub.add_parser("vectorial", help="construye el índice de embeddings (capa semántica)")
+    pv.add_argument("--limite", type=int, help="embeber solo los N primeros (pruebas)")
+    pv.set_defaults(func=cmd_vectorial)
+
     pp = sub.add_parser("pregunta", help="responde una pregunta con citas verificadas")
     pp.add_argument("texto")
     pp.add_argument("--top", type=int)
     pp.add_argument("--json", action="store_true")
     pp.add_argument("--llm", action="store_true", help="modo asistido (gasta tokens)")
+    pp.add_argument("--lexico", action="store_true", help="forzar solo BM25")
     pp.set_defaults(func=cmd_pregunta)
 
     pb = sub.add_parser("banco", help="valida el banco de evaluación contra el corpus")

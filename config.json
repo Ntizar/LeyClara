@@ -17,10 +17,21 @@
 
   "recuperacion": {
     "top_k": 5,
+    "modo": "hibrido",
     "solo_vigentes": false,
     "min_cobertura": 0.7,
     "min_terminos": 2,
-    "min_caracteres_articulo": 15
+    "min_similitud": 0.5,
+    "min_caracteres_articulo": 15,
+    "rrf_k": 60
+  },
+
+  "vectorial": {
+    "endpoint": "https://api.nan.builders/v1/embeddings",
+    "modelo": "qwen3-embedding",
+    "lote": 32,
+    "max_caracteres": 1200,
+    "api_key_env": "HERMES_CUSTOM_OPENAI_COMPATIBLE_API_KEY"
   },
 
   "respuesta": {
@@ -30,11 +41,12 @@
   },
 
   "llm": {
-    "habilitado": false,
-    "endpoint": "http://127.0.0.1:8080/v1/chat/completions",
-    "modelo": "local",
+    "habilitado": true,
+    "endpoint": "https://api.nan.builders/v1/chat/completions",
+    "modelo": "qwen3.8-flash",
     "temperatura": 0,
-    "max_tokens": 700
+    "max_tokens": 12000,
+    "api_key_env": "HERMES_CUSTOM_OPENAI_COMPATIBLE_API_KEY"
   },
 
   "informe": {
@@ -43,15 +55,16 @@
   },
 
   "normas": [
-    { "id": "BOE-A-1978-31229", "nombre": "Constitución Española",                    "nucleo": true },
-    { "id": "BOE-A-1889-4763",  "nombre": "Código Civil",                             "nucleo": true },
-    { "id": "BOE-A-1995-25444", "nombre": "Código Penal",                             "nucleo": true },
-    { "id": "BOE-A-2000-323",   "nombre": "Ley de Enjuiciamiento Civil (LEC)",        "nucleo": true },
-    { "id": "BOE-A-1882-6036",  "nombre": "Ley de Enjuiciamiento Criminal (LECrim)",  "nucleo": true },
-    { "id": "BOE-A-2015-11430", "nombre": "Estatuto de los Trabajadores (ET)",        "nucleo": true },
-    { "id": "BOE-A-2020-4859",  "nombre": "Ley Concursal",                            "nucleo": true },
-    { "id": "BOE-A-2010-10544", "nombre": "Ley de Sociedades de Capital (LSC)",       "nucleo": true },
-    { "id": "BOE-A-2003-23186", "nombre": "Ley General Tributaria (LGT)",             "nucleo": true },
-    { "id": "BOE-A-1994-26003", "nombre": "Ley de Arrendamientos Urbanos (LAU)",      "nucleo": true }
+    { "id": "BOE-A-1978-31229", "nombre": "Constitución Española",                    "nucleo": true, "alias": ["constitucion", "constitucional", "CE"] },
+    { "id": "BOE-A-1889-4763",  "nombre": "Código Civil",                             "nucleo": true, "alias": ["codigo civil", "CC"] },
+    { "id": "BOE-A-1995-25444", "nombre": "Código Penal",                             "nucleo": true, "alias": ["codigo penal", "CP"] },
+    { "id": "BOE-A-2000-323",   "nombre": "Ley de Enjuiciamiento Civil (LEC)",        "nucleo": true, "alias": ["enjuiciamiento civil", "LEC"] },
+    { "id": "BOE-A-1882-6036",  "nombre": "Ley de Enjuiciamiento Criminal (LECrim)",  "nucleo": true, "alias": ["enjuiciamiento criminal", "LECrim"] },
+    { "id": "BOE-A-2015-11430", "nombre": "Estatuto de los Trabajadores (ET)",        "nucleo": true, "alias": ["estatuto de los trabajadores", "estatuto del trabajador", "ET"] },
+    { "id": "BOE-A-2020-4859",  "nombre": "Ley Concursal",                            "nucleo": true, "alias": ["concursal", "concurso de acreedores"] },
+    { "id": "BOE-A-2010-10544", "nombre": "Ley de Sociedades de Capital (LSC)",       "nucleo": true, "alias": ["sociedades de capital", "LSC"] },
+    { "id": "BOE-A-2003-23186", "nombre": "Ley General Tributaria (LGT)",             "nucleo": true, "alias": ["general tributaria", "LGT"] },
+    { "id": "BOE-A-1994-26003", "nombre": "Ley de Arrendamientos Urbanos (LAU)",      "nucleo": true, "alias": ["arrendamientos urbanos", "LAU"] },
+    { "id": "BOE-A-1988-18762", "nombre": "Ley de Costas",                            "nucleo": true, "alias": ["ley de costas", "litoral", "dominio publico maritimo"] }
   ]
 }

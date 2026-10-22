@@ -10,6 +10,43 @@ externa. El corpus se descarga de la API de datos abiertos del BOE.
 
 ---
 
+## 0. Cómo se usa (y en qué soporte)
+
+LeyClara es **un motor**, no una app. Ese motor se puede usar de tres maneras, y conviene
+tener claro cuál es cuál:
+
+| Boca | Para quién | Qué es | Estado |
+|---|---|---|---|
+| **1. Línea de comandos** | tú, para auditar y para cron | `python -m leyclara pregunta "..."` devuelve veredicto + citas literales + enlace oficial | ✅ hecho |
+| **2. Chat local (web)** | el usuario final | un chat en `localhost` donde cada respuesta muestra su veredicto, sus preceptos y el enlace al BOE | ⏳ siguiente |
+| **3. API HTTP** | integrarlo en otro producto (panel, gestor, dashboard) | `POST /preguntar` → JSON con `veredicto`, `afirmaciones`, `puentes` | ⏳ siguiente |
+
+**Por qué el chat va en local y no en una web pública**: en cuanto el usuario suba *sus*
+documentos (un contrato, un expediente), sacarlos de su equipo deja de ser una decisión
+técnica y pasa a ser un problema de secreto profesional. El motor es el mismo; lo que cambia
+es dónde vive el corpus.
+
+**El flujo de uso real, en tres pasos:**
+
+```
+1. cargas las leyes que te interesan        → config.json (una línea por ley)
+2. construyes el índice                     → python -m leyclara ingesta
+                                              python -m leyclara vectorial
+3. preguntas y LEE EL VEREDICTO             → python -m leyclara pregunta "..."
+```
+
+Y la regla de oro de la interfaz: **el veredicto manda**.
+
+- `✅ VERIFICADO` → todo lo que se muestra es texto literal del BOE, con enlace.
+- `❔ NO CONSTA` → no hay precepto aplicable en el corpus. **No es un fallo del sistema,
+  es una respuesta.**
+- `⚠️ REVISAR` → algo no pasó el gate y se muestra marcado.
+
+Esa tercera línea es la que ningún chatbot te da: no "confía en mí", sino "esto es lo que
+he podido comprobar y esto es lo que no".
+
+---
+
 ## 1. Las dos formas de fallar (el porqué del diseño)
 
 Un asistente jurídico puede equivocarse de dos maneras, y **la segunda casi nadie la mide**:
@@ -111,27 +148,46 @@ Salida de `ingesta`: una línea por norma con artículos y cambios de vigencia.
 
 ### Estado real de esta entrega (medido, no prometido)
 
-Corpus: **10 normas · 8.651 artículos · 771 relaciones de vigencia · 6.240 remisiones ·
-24,1 MB** (de ellos **2.898 artículos con redacción modificada**, el 33 %).
+Corpus: **11 normas · 8.853 artículos · 805 relaciones de vigencia · 8.853 vectores**.
 
-Banco de 15 preguntas (12 con respuesta + 3 sin respuesta), modo extractivo:
-
-| Métrica | Valor |
+| Dato | Valor |
 |---|---|
-| Acierto | **7/12** (recall 0,583) |
-| Falso negativo — recuperación | **5** ← el fallo silencioso que hay que bajar |
-| Falso negativo — omisión | 0 |
-| Abstención correcta | 2/3 |
-| **Falso positivo** | **1** |
-| **Afirmaciones bloqueadas por el gate** | **0** |
+| Texto jurídico | 8.853 artículos (~8,5 MB) |
+| Artículos con redacción modificada | ~2.900 (33 %) |
+| Índice vectorial | 8.853 × 4.096 dims · **1.381.537 tokens** de embeddings · 17 min |
+| Coste del índice | pago único; regenerar sólo cuando cambie el corpus |
 
-Ese `1` de falso positivo está identificado: *"¿importe de la tasa del DNI?"* devuelve los
-arts. 647-648 de la LEC porque hablan de «tasa» en otro sentido. Es un fallo **léxico**, y
-es exactamente lo que arreglará la capa vectorial.
+Banco de 15 preguntas (12 con respuesta + 3 sin respuesta), **mismos parámetros, sólo
+cambia el recuperador**:
 
-Los 5 falsos negativos son todos del mismo tipo: la pregunta usa un vocabulario que el
-precepto no emplea («pena por homicidio» frente a «castigado con la pena de…»). Un
-recuperador léxico no los ve; uno semántico sí.
+| Recuperador | Acierto | Recall | Falsos neg. | Falsos pos. | Abstención |
+|---|---|---|---|---|---|
+| Sólo léxico (BM25) | 7/12 | 0,583 | 5 | 1 | 2/3 |
+| **Híbrido (BM25 + vectorial + RRF)** | **11/12** | **0,917** | **1** | 1 | 2/3 |
+
+**+58 % de recall sin empeorar la precisión.** Ese es el trabajo de la capa vectorial: los
+5 falsos negativos que el léxico no veía («pena por homicidio» frente a «castigado con la
+pena de…») los resuelve el embedding.
+
+El único falso positivo que queda está identificado: *"¿importe de la tasa del DNI?"*.
+Y el único falso negativo restante también: es una pregunta cuyo precepto no está en las
+11 normas cargadas.
+
+### El falso positivo que trae el vectorial (y cómo se corta)
+
+Un buscador vectorial **siempre** devuelve "lo más parecido": sin umbral, el sistema
+contestaba a las 3 preguntas sin respuesta. Se corta con `min_similitud` (coseno mínimo),
+calibrado por barrido:
+
+| `min_similitud` | Acierto | Falsos pos. | Abstención |
+|---|---|---|---|
+| 0,30 | 11/12 | 3 | 0/3 |
+| 0,45 | 11/12 | 2 | 1/3 |
+| **0,50** | **11/12** | **1** | **2/3** |
+| 0,65 | 10/12 | 1 | 2/3 |
+
+Estable entre 0,50 y 0,60; se elige **0,50** para no ahogar preguntas que nombran dos
+normas (el Código Civil se quedaba a 0,001 del corte con 0,55).
 
 ### Preguntar
 
@@ -290,6 +346,52 @@ ven leyendo el código.
 Los tres son ejemplos del mismo principio: **el sistema tiene que ser capaz de decirte que
 se equivoca**. Un chatbot que sólo acierta "casi siempre" no te lo dice nunca.
 
+### Saltar entre normas (lo que pediste: Costas → Código Civil)
+
+Cuando la pregunta **nombra dos cuerpos legales**, el sistema cambia de estrategia:
+
+1. **Detecta las normas nombradas** por alias (`config.json → normas[].alias`).
+2. **Busca dentro de cada una** por separado, no sólo en el conjunto.
+3. **Reparte cuota**: si hay 2 normas y 3 huecos, cada norma aporta al menos un precepto
+   antes de rellenar. Sin esto, la norma léxicamente dominante ocupaba todo el top.
+4. **Lee puentes en el texto oficial**: si un artículo citado menciona otra norma del
+   corpus, se muestra como `🔗 puente` con la frase literal que lo prueba.
+
+```bash
+python -m leyclara pregunta "¿Cómo se aplica el incumplimiento de la Ley de Costas en el Código Civil?"
+```
+
+Y aquí hay un hallazgo que conviene saber: **la Ley de Costas no menciona el Código Civil
+ni una sola vez en sus 202 artículos** (comprobado). Por tanto el enlace Costas→Civil
+**no es textual**: es interpretativo. El sistema hace entonces lo único honesto:
+
+- En **modo extractivo** te da los preceptos de ambas normas con su cita literal y **no
+  inventa el puente**.
+- En **modo `llm`**, el modelo propone el enlace y **el gate verifica cada mitad**: las
+  citas son literales y comprobables. Ejemplo real ejecutado:
+
+```
+✅ VERIFICADO — «¿Cómo se aplica el incumplimiento de la Ley de Costas en el Código Civil?»
+  ✅ BOE-A-1988-18762 · a91 · «Tendrán el carácter de infracciones leves las acciones u
+     omisiones...» (Ley de Costas)
+  ✅ BOE-A-1988-18762 · a91 · «El incumplimiento de lo establecido en materia de
+     servidumbres... es infracción leve.»
+  ✅ BOE-A-1889-4763 · tercera · «Las disposiciones del Código que sancionan con penalidad
+     civil o privación de derechos actos u omisiones...» (Código Civil, D.T. 3.ª)
+  · Borrador generado por qwen3.8-flash y filtrado por el gate.
+```
+
+> ⚠️ **Límite que hay que decir en voz alta:** el gate garantiza que **cada cita es literal
+> y existe**. NO garantiza que el **razonamiento** que las une sea el correcto. Eso sigue
+> siendo criterio profesional. Lo que elimina el gate es la alucinación documental, que es
+> la que hace impresentable un asistente jurídico.
+
+Coste real del modo `llm`: **~11.000 tokens por consulta** con `qwen3.8-flash` (es un
+modelo de razonamiento: se gastó 41.880 caracteres pensando antes de responder). Los
+modelos `deepseek-v4-flash`, `qwen3.6` y `glm5.3-flash` **agotaron el límite razonando y
+devolvieron contenido vacío** — comprobado con el prompt real. Por eso el modo por defecto
+es el extractivo.
+
 ---
 
 ## 9. Estructura
@@ -303,7 +405,8 @@ LeyClara/
 │   ├── config.py            carga y resuelve rutas
 │   ├── boe.py               cliente de la API (con las trampas documentadas)
 │   ├── ingesta.py           BOE → SQLite, troceado por artículo + grafo de remisiones
-│   ├── recuperar.py         BM25 sobre FTS5
+│   ├── recuperar.py         BM25 (FTS5) + vectorial con fusión RRF
+│   ├── vectorial.py         embeddings (qwen3-embedding) + índice coseno en numpy
 │   ├── verificar.py         GATE (3 asserts)
 │   ├── responder.py         composición extractiva / modo LLM
 │   ├── informe.py           harness + informe markdown
@@ -341,13 +444,15 @@ No se trocea por número de caracteres ni por tokens: **la unidad citable es el 
 
 ## 11. Limitaciones declaradas
 
-1. **Recuperación sólo léxica (BM25)**. Una pregunta con vocabulario muy distinto al del
-   precepto puede no encontrarlo → falso negativo. La capa vectorial + RRF está pendiente.
+1. **El `min_cobertura` y el `min_similitud` están calibrados sobre 15 preguntas.** Sirven
+   como punto de partida, no como verdad. Con 50 preguntas los números cambiarán.
 2. **Sin cómputo de plazos**. Detecta y señala; no calcula.
 3. **Cobertura = lo que hay en `config.json`**. "No consta" puede significar "no está cargada".
-4. **El modo `llm` no está probado end-to-end en esta entrega** (no hay modelo conectado por
-   defecto). El modo extractivo sí está probado y medido.
+4. **El gate valida citas, no razonamientos.** Un enlace entre normas puede ser literalmente
+   correcto y jurídicamente discutible. El sistema lo hace verificable, no lo hace cierto.
 5. **Desfase de consolidación**: hasta 1-3 días hábiles desde la publicación de una modificación.
+6. **El modo `llm` cuesta ~11.000 tokens por consulta** y depende de un modelo de razonamiento
+   (los modelos "flash" sin razonamiento devolvieron vacío en las pruebas).
 
 ---
 
