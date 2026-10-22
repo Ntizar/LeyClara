@@ -65,6 +65,12 @@ def cmd_vectorial(args):
     print(f"\n== {st['embebidos']} artículos embebidos · {st['tokens']:,} tokens")
 
 
+def cmd_servir(args):
+    cfg = _cfg(args)
+    from . import servir
+    servir.servir(puerto=args.puerto, cfg=cfg)
+
+
 def cmd_pregunta(args):
     cfg = _cfg(args)
     if args.lexico:
@@ -173,6 +179,10 @@ def main(argv=None):
     pv = sub.add_parser("vectorial", help="construye el índice de embeddings (capa semántica)")
     pv.add_argument("--limite", type=int, help="embeber solo los N primeros (pruebas)")
     pv.set_defaults(func=cmd_vectorial)
+
+    psv = sub.add_parser("servir", help="abre el chat local en el navegador")
+    psv.add_argument("--puerto", type=int, default=8788)
+    psv.set_defaults(func=cmd_servir)
 
     pp = sub.add_parser("pregunta", help="responde una pregunta con citas verificadas")
     pp.add_argument("texto")

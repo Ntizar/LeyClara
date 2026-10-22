@@ -43,7 +43,7 @@
   "llm": {
     "habilitado": true,
     "endpoint": "https://api.nan.builders/v1/chat/completions",
-    "modelo": "qwen3.8-flash",
+    "modelo": "qwen3.6",
     "temperatura": 0,
     "max_tokens": 12000,
     "api_key_env": "HERMES_CUSTOM_OPENAI_COMPATIBLE_API_KEY"

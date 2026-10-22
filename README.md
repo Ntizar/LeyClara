@@ -18,8 +18,8 @@ tener claro cuál es cuál:
 | Boca | Para quién | Qué es | Estado |
 |---|---|---|---|
 | **1. Línea de comandos** | tú, para auditar y para cron | `python -m leyclara pregunta "..."` devuelve veredicto + citas literales + enlace oficial | ✅ hecho |
-| **2. Chat local (web)** | el usuario final | un chat en `localhost` donde cada respuesta muestra su veredicto, sus preceptos y el enlace al BOE | ⏳ siguiente |
-| **3. API HTTP** | integrarlo en otro producto (panel, gestor, dashboard) | `POST /preguntar` → JSON con `veredicto`, `afirmaciones`, `puentes` | ⏳ siguiente |
+| **2. Chat local (web)** | el usuario final | `python -m leyclara servir` abre un chat en `http://127.0.0.1:8788` con veredicto, preceptos y enlace al BOE | ✅ hecho |
+| **3. API HTTP** | integrarlo en otro producto (panel, gestor, dashboard) | `POST /api/preguntar` → JSON con `veredicto`, `afirmaciones`, `puentes` | ✅ hecho (la web ya consume esa API) |
 
 **Por qué el chat va en local y no en una web pública**: en cuanto el usuario suba *sus*
 documentos (un contrato, un expediente), sacarlos de su equipo deja de ser una decisión
@@ -44,6 +44,25 @@ Y la regla de oro de la interfaz: **el veredicto manda**.
 
 Esa tercera línea es la que ningún chatbot te da: no "confía en mí", sino "esto es lo que
 he podido comprobar y esto es lo que no".
+
+### Arrancar el chat
+
+```bash
+python -m leyclara servir            # http://127.0.0.1:8788
+python -m leyclara servir --puerto 8790
+```
+
+Detalles de la interfaz (Aurora v10.1.0, packs `p1 p2 p3 p5 p6 p9 p14`):
+
+- Veredicto como insignia con icono del sprite del sistema (`nz-i-069` verificado,
+  `nz-i-073` no consta, `nz-i-072` revisar). **Cero emojis en la UI**: el auditor de
+  Aurora los caza y con razón.
+- Cada cita va en un `nz-callout` con su insignia "cita verificada" o el motivo del bloqueo.
+- Interruptor **modo asistido** en la barra: apagado = extractivo (0 tokens);
+  encendido = LLM + gate (`qwen3.6`).
+- Servidor sólo en `127.0.0.1`: no escucha en la red.
+- Verificado: `auditar-uso.py` de Aurora → **0 fallos**; sin desborde a 320/360/390 px;
+  botón de envío a 44 px (táctil).
 
 ---
 

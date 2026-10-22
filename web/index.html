@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es" data-nz-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeyClara — hablar con el BOE sin alucinaciones</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/tokens.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p1-layout.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p2-navigation.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p3-typography.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p5-forms.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p6-feedback.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p9-media.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p14-ai.css">
+</head>
+<body class="nz">
+
+<header class="nz-navbar">
+  <span class="nz-navbar__brand">LeyClara</span>
+  <nav class="nz-navbar__links">
+    <span class="nz-badge nz-badge--neutral" id="estado-corpus">cargando corpus…</span>
+    <label class="nz-switch">
+      <input type="checkbox" id="modo-llm">
+      <span class="nz-switch__label">modo asistido</span>
+    </label>
+  </nav>
+</header>
+
+<main class="nz-container nz-container--app">
+
+  <h1 class="nz-h1">Hablar con el BOE sin alucinaciones</h1>
+  <p class="nz-lead">Cada respuesta muestra el veredicto, el texto literal del precepto y el
+     enlace oficial para comprobarlo. Si no consta, lo dice.</p>
+
+  <div class="nz-alert nz-alert--info">
+    <svg class="nz-icon nz-alert__icon" viewBox="0 0 24 24" aria-hidden="true">
+      <use href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/iconos/sprite.svg#nz-i-074"></use>
+    </svg>
+    <div class="nz-alert__body">
+      <p class="nz-alert__msg">Textos consolidados del BOE de carácter meramente informativo.
+        No es asesoramiento jurídico. Los plazos se señalan pero no se calculan.</p>
+    </div>
+  </div>
+
+  <div class="nz-chat" id="chat">
+    <div class="nz-chat__head">
+      <span class="nz-chat__title">Consulta</span>
+      <span class="nz-chat__status" id="chat-estado">listo</span>
+    </div>
+    <div class="nz-chat__body" id="hilo">
+      <div class="nz-msg nz-msg--asistente">
+        <div class="nz-msg__body">
+          <div class="nz-msg__author">LeyClara</div>
+          <div class="nz-msg__bubble">
+            <p class="nz-msg__text">Pregunta por una norma o por un problema jurídico concreto.
+              Ejemplos: «¿Cuál es el plazo para impugnar la tasación de costas?» ·
+              «¿Qué indemnización corresponde por despido improcedente?» ·
+              «¿Cómo se aplica el incumplimiento de la Ley de Costas en el Código Civil?»</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nz-prompt">
+    <textarea class="nz-prompt__input" id="entrada" rows="2"
+      placeholder="Escribe tu pregunta jurídica…" aria-label="Pregunta jurídica"></textarea>
+    <button class="nz-prompt__send" id="enviar">Enviar</button>
+  </div>
+
+  <p class="nz-lbl">Cada cita se comprueba con tres asserts contra el texto oficial: la norma existe,
+    el artículo existe y la cita aparece literalmente. Lo que no pasa el gate, no se muestra.</p>
+
+</main>
+
+<footer class="nz-container">
+  <p class="nz-lbl">Basado en datos de la Agencia Estatal Boletín Oficial del Estado —
+    <a href="https://www.boe.es">boe.es</a> · Hecho con ❤️ por David Antizar</p>
+</footer>
+
+<script>
+const SPRITE = 'https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/iconos/sprite.svg';
+const hilo = document.getElementById('hilo');
+const entrada = document.getElementById('entrada');
+const enviar = document.getElementById('enviar');
+const estadoChat = document.getElementById('chat-estado');
+const modoLLM = document.getElementById('modo-llm');
+
+fetch('/api/estado').then(r => r.json()).then(d => {
+  document.getElementById('estado-corpus').textContent =
+    `${d.normas_cargadas} normas · ${d.articulos.toLocaleString('es-ES')} artículos`;
+  document.getElementById('chat-estado').textContent = d.modo;
+}).catch(() => {
+  document.getElementById('estado-corpus').textContent = 'corpus no disponible';
+});
+
+function el(tag, clase, texto) {
+  const n = document.createElement(tag);
+  if (clase) n.className = clase;
+  if (texto !== undefined) n.textContent = texto;
+  return n;
+}
+
+function icono(num) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'nz-icon');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS(NS, 'use');
+  use.setAttribute('href', SPRITE + '#nz-i-' + num);
+  svg.appendChild(use);
+  return svg;
+}
+
+function burbuja(autor, tono) {
+  const msg = el('div', 'nz-msg nz-msg--' + tono);
+  const cuerpo = el('div', 'nz-msg__body');
+  cuerpo.appendChild(el('div', 'nz-msg__author', autor));
+  const bubble = el('div', 'nz-msg__bubble');
+  cuerpo.appendChild(bubble);
+  msg.appendChild(cuerpo);
+  hilo.appendChild(msg);
+  hilo.scrollTop = hilo.scrollHeight;
+  return bubble;
+}
+
+const TONO = {
+  'VERIFICADO': ['nz-badge--success', '069', 'verificado'],
+  'NO CONSTA':  ['nz-badge--neutral', '073', 'no consta'],
+  'REVISAR':    ['nz-badge--warning', '072', 'revisar'],
+};
+
+function insignia(contenedor, clase, num, texto) {
+  const b = el('span', 'nz-badge ' + clase);
+  if (num) b.appendChild(icono(num));
+  b.appendChild(document.createTextNode(' ' + texto));
+  contenedor.appendChild(b);
+  return b;
+}
+
+function pintar(r) {
+  const b = burbuja('LeyClara', 'asistente');
+  const [clase, num, texto] = TONO[r.veredicto] || ['nz-badge--neutral', null, r.veredicto];
+  insignia(b, clase, num, texto);
+  b.appendChild(el('p', 'nz-msg__text',
+    r.modo === 'llm' ? `Borrador de ${r.llm_modelo}, verificado por el gate.`
+                     : 'Modo extractivo: texto literal del BOE, sin generación.'));
+
+  (r.afirmaciones || []).forEach(a => {
+    const caja = el('div', 'nz-callout');
+    const cab = el('p', 'nz-callout__title');
+    insignia(cab, a.ok ? 'nz-badge--success' : 'nz-badge--danger',
+             a.ok ? '036' : '072', a.ok ? 'cita verificada' : a.motivo);
+    caja.appendChild(cab);
+    caja.appendChild(el('p', 'nz-lbl', a.texto));
+    caja.appendChild(el('p', 'nz-prose', '«' + a.cita + '»'));
+    caja.appendChild(el('p', 'nz-lbl', `${a.norma} · ${a.bloque}`));
+    b.appendChild(caja);
+  });
+
+  if ((r.puentes || []).length) {
+    b.appendChild(el('p', 'nz-lbl', 'Puentes entre normas (leídos del texto oficial)'));
+    r.puentes.forEach(p => {
+      b.appendChild(el('p', 'nz-prose',
+        `${p.desde} art. ${p.desde_art} hacia ${p.hacia_nombre}: «${p.evidencia.slice(0, 180)}»`));
+    });
+  }
+
+  if ((r.plazos || []).length) {
+    b.appendChild(el('p', 'nz-prose',
+      'Plazos citados: ' + r.plazos.map(p => p.cantidad + ' ' + p.unidad).join(', ') +
+      '. El cómputo no lo calcula LeyClara: verifícalo en el precepto.'));
+  }
+
+  if ((r.fuentes || []).length) {
+    b.appendChild(el('p', 'nz-lbl', 'Fuente oficial'));
+    const vistos = new Set();
+    r.fuentes.forEach(f => {
+      const ancla = /^(a|art)\d+$/.test(f.bloque || '') ? '#' + f.bloque : '';
+      const url = f.url + ancla;
+      if (vistos.has(url)) return;
+      vistos.add(url);
+      const p = el('p', 'nz-lbl');
+      const a = el('a', '', url);
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      p.appendChild(a);
+      b.appendChild(p);
+    });
+  }
+
+  (r.notas || []).forEach(n => b.appendChild(el('p', 'nz-lbl', n)));
+  hilo.scrollTop = hilo.scrollHeight;
+}
+
+async function preguntar() {
+  const texto = entrada.value.trim();
+  if (!texto) return;
+  entrada.value = '';
+  burbuja('tú', 'usuario').appendChild(el('p', 'nz-msg__text', texto));
+  enviar.disabled = true;
+  estadoChat.textContent = 'consultando…';
+  try {
+    const resp = await fetch('/api/preguntar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json; charset=utf-8'},
+      body: JSON.stringify({pregunta: texto, modo: modoLLM.checked ? 'llm' : 'extractivo'})
+    });
+    pintar(await resp.json());
+    estadoChat.textContent = 'listo';
+  } catch (e) {
+    const b = burbuja('LeyClara', 'asistente');
+    insignia(b, 'nz-badge--danger', '016', 'sin conexión con el motor');
+    b.appendChild(el('p', 'nz-msg__text', String(e)));
+    estadoChat.textContent = 'error';
+  } finally {
+    enviar.disabled = false;
+  }
+}
+
+enviar.addEventListener('click', preguntar);
+entrada.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); preguntar(); }
+});
+</script>
+</body>
+</html>
