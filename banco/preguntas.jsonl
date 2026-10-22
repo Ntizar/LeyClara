@@ -1,0 +1,24 @@
+# Banco de evaluación de LeyClara
+#
+# Formato: una línea = una pregunta (JSONL, admite comentarios con #).
+#   esperado = {"norma": "BOE-A-...", "bloque": "aXX"}  -> debe citarse ese precepto
+#   esperado = null                                     -> NO consta en el corpus: debe abstenerse
+#
+# Valida las referencias antes de fiarte:  python -m leyclara banco
+# Sin banco no hay "0 fallos": hay fe.
+
+{"id": "q01", "tipo": "plazo",     "pregunta": "¿Se puede impugnar la tasación de costas si considero excesivos los honorarios del abogado?", "esperado": {"norma": "BOE-A-2000-323", "bloque": "a245"}}
+{"id": "q02", "tipo": "plazo",     "pregunta": "¿Cuál es el plazo para interponer el recurso de apelación contra una sentencia?", "esperado": {"norma": "BOE-A-2000-323", "bloque": "a458"}}
+{"id": "q03", "tipo": "importe",   "pregunta": "¿Qué indemnización corresponde al trabajador por despido improcedente?", "esperado": {"norma": "BOE-A-2015-11430", "bloque": "a56"}}
+{"id": "q04", "tipo": "requisito", "pregunta": "¿Cuándo se considera procedente el despido disciplinario de un trabajador?", "esperado": {"norma": "BOE-A-2015-11430", "bloque": "a54"}}
+{"id": "q05", "tipo": "pena",      "pregunta": "¿Qué pena corresponde al homicidio de otra persona?", "esperado": {"norma": "BOE-A-1995-25444", "bloque": "a138"}}
+{"id": "q06", "tipo": "pena",      "pregunta": "¿Qué pena tiene causar una lesión que requiera tratamiento médico o quirúrgico?", "esperado": {"norma": "BOE-A-1995-25444", "bloque": "a147"}}
+{"id": "q07", "tipo": "responsabilidad", "pregunta": "¿Quién responde de los daños causados por culpa o negligencia?", "esperado": {"norma": "BOE-A-1889-4763", "bloque": "art1902"}}
+{"id": "q08", "tipo": "plazo",     "pregunta": "¿Cuál es el plazo general de prescripción de las acciones personales?", "esperado": {"norma": "BOE-A-1889-4763", "bloque": "art1964"}}
+{"id": "q09", "tipo": "plazo",     "pregunta": "¿Cuántos años tarda en prescribir el derecho de la Administración a liquidar una deuda tributaria?", "esperado": {"norma": "BOE-A-2003-23186", "bloque": "a66"}}
+{"id": "q10", "tipo": "plazo",     "pregunta": "¿Cuál es la duración mínima del arrendamiento de vivienda?", "esperado": {"norma": "BOE-A-1994-26003", "bloque": "a9"}}
+{"id": "q11", "tipo": "derecho",   "pregunta": "¿Qué derecho fundamental protege la tutela judicial efectiva sin indefensión?", "esperado": {"norma": "BOE-A-1978-31229", "bloque": "a24"}}
+{"id": "q12", "tipo": "legitimacion", "pregunta": "¿Quién está legitimado para solicitar la declaración de concurso de acreedores?", "esperado": {"norma": "BOE-A-2020-4859", "bloque": "a2"}}
+{"id": "q13", "tipo": "negativa",  "pregunta": "¿Cuál es el importe de la tasa por expedición del Documento Nacional de Identidad?", "esperado": null}
+{"id": "q14", "tipo": "negativa",  "pregunta": "¿Cuál es el límite de velocidad genérico en autovía para turismos?", "esperado": null}
+{"id": "q15", "tipo": "negativa",  "pregunta": "¿Qué plazo de garantía comercial debe dar el fabricante de un electrodoméstico?", "esperado": null}

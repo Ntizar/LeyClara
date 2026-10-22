@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "nombre": "LeyClara",
+
+  "corpus": {
+    "db": "corpus/leyclara.db",
+    "jsonl": "corpus/articulos.jsonl"
+  },
+
+  "boe": {
+    "base": "https://www.boe.es/datosabiertos/api/legislacion-consolidada",
+    "user_agent": "LeyClara/0.1 (reutilizacion legislacion consolidada; contacto: Ntizar)",
+    "reintentos": 3,
+    "timeout_s": 120,
+    "pausa_ms": 400
+  },
+
+  "recuperacion": {
+    "top_k": 5,
+    "solo_vigentes": false,
+    "min_cobertura": 0.7,
+    "min_terminos": 2,
+    "min_caracteres_articulo": 15
+  },
+
+  "respuesta": {
+    "modo": "extractivo",
+    "max_citas": 3,
+    "max_caracteres_cita": 600
+  },
+
+  "llm": {
+    "habilitado": false,
+    "endpoint": "http://127.0.0.1:8080/v1/chat/completions",
+    "modelo": "local",
+    "temperatura": 0,
+    "max_tokens": 700
+  },
+
+  "informe": {
+    "dir": "informes",
+    "incluir_enlace_oficial": true
+  },
+
+  "normas": [
+    { "id": "BOE-A-1978-31229", "nombre": "Constitución Española",                    "nucleo": true },
+    { "id": "BOE-A-1889-4763",  "nombre": "Código Civil",                             "nucleo": true },
+    { "id": "BOE-A-1995-25444", "nombre": "Código Penal",                             "nucleo": true },
+    { "id": "BOE-A-2000-323",   "nombre": "Ley de Enjuiciamiento Civil (LEC)",        "nucleo": true },
+    { "id": "BOE-A-1882-6036",  "nombre": "Ley de Enjuiciamiento Criminal (LECrim)",  "nucleo": true },
+    { "id": "BOE-A-2015-11430", "nombre": "Estatuto de los Trabajadores (ET)",        "nucleo": true },
+    { "id": "BOE-A-2020-4859",  "nombre": "Ley Concursal",                            "nucleo": true },
+    { "id": "BOE-A-2010-10544", "nombre": "Ley de Sociedades de Capital (LSC)",       "nucleo": true },
+    { "id": "BOE-A-2003-23186", "nombre": "Ley General Tributaria (LGT)",             "nucleo": true },
+    { "id": "BOE-A-1994-26003", "nombre": "Ley de Arrendamientos Urbanos (LAU)",      "nucleo": true }
+  ]
+}

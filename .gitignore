@@ -1,0 +1,15 @@
+# corpus generado (regenerable desde la API del BOE)
+corpus/
+*.db
+*.db-wal
+*.db-shm
+
+# caché de Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# salidas locales
+*.log
+.DS_Store
