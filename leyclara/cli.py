@@ -93,6 +93,7 @@ def cmd_pregunta(args):
         marca = "✅" if a["ok"] else f"🚫 {a['motivo']}"
         print(f"  {marca}  {a['norma']} · {a['bloque']} · {a['texto']}")
         print(f'     «{a["cita"][:300]}{"…" if len(a["cita"])>300 else ""}»')
+        print(f'     🔗 {a.get("url")}')
         print()
     if r.get("puentes"):
         print("  🔗 puentes entre normas (leídos del texto oficial):")

@@ -181,13 +181,25 @@ function urlOficial(f) {
   return f.url + ancla;
 }
 
-// Cita: etiqueta corta (norma · articulo) + texto literal + enlace. Sin badge repetido
-// por cita: el veredicto ya esta arriba y tres insignias iguales son ruido.
+// Cita: etiqueta corta (norma · articulo) ENLAZADA al BOE + texto literal.
+// Regla del producto: toda ley nombrada es un hipervinculo a la norma o al articulo.
 function cita(a) {
   const caja = el('div');
-  caja.appendChild(el('p', 'nz-lbl', `${a.texto} · ${a.norma}`));
+  const p = el('p', 'nz-lbl');
+  const enlace = el('a', '', `${a.texto} · ${a.norma}`);
+  enlace.href = a.url || ('https://www.boe.es/buscar/act.php?id=' + a.norma);
+  enlace.target = '_blank'; enlace.rel = 'noopener';
+  p.appendChild(enlace);
+  caja.appendChild(p);
   caja.appendChild(el('p', 'nz-prose', '«' + a.cita + '»'));
   return caja;
+}
+
+function enlaceNorma(nid, etiqueta) {
+  const a = el('a', '', etiqueta || nid);
+  a.href = 'https://www.boe.es/buscar/act.php?id=' + nid;
+  a.target = '_blank'; a.rel = 'noopener';
+  return a;
 }
 
 function pintarFuentes(r) {
@@ -232,8 +244,17 @@ function pintar(r) {
 
   if ((r.puentes || []).length) {
     b.appendChild(el('p', 'nz-lbl', 'Puentes entre normas'));
-    r.puentes.forEach(p => b.appendChild(el('p', 'nz-prose',
-      `${p.desde} art. ${p.desde_art} hacia ${p.hacia_nombre}: «${p.evidencia.slice(0, 160)}»`)));
+    r.puentes.forEach(p => {
+      const parrafo = el('p', 'nz-prose');
+      const desde = el('a', '', p.desde + ' art. ' + p.desde_art);
+      desde.href = 'https://www.boe.es/buscar/act.php?id=' + p.desde;
+      desde.target = '_blank'; desde.rel = 'noopener';
+      parrafo.appendChild(desde);
+      parrafo.appendChild(document.createTextNode(' hacia '));
+      parrafo.appendChild(enlaceNorma(p.hacia, p.hacia_nombre));
+      parrafo.appendChild(document.createTextNode(': «' + p.evidencia.slice(0, 160) + '»'));
+      b.appendChild(parrafo);
+    });
   }
 
   if ((r.plazos || []).length) {
@@ -244,6 +265,19 @@ function pintar(r) {
 
   // El aviso de plazo ya se pinta en su propia linea: no repetirlo como nota.
   (r.notas || []).filter(n => !n.startsWith('⏱')).forEach(n => b.appendChild(el('p', 'nz-lbl', n)));
+
+  if ((r.candidatas || []).length) {
+    b.appendChild(el('p', 'nz-lbl', 'Normas que podrían aplicar y no están cargadas'));
+    r.candidatas.forEach(c => {
+      const p = el('p', 'nz-prose');
+      const a = el('a', '', `${c.titulo} (${c.identificador})`);
+      a.href = c.url; a.target = '_blank'; a.rel = 'noopener';
+      p.appendChild(a);
+      b.appendChild(p);
+    });
+    b.appendChild(el('p', 'nz-lbl',
+      'Sin el texto de esas normas no se puede citar nada. Añádelas al config y vuelve a preguntar.'));
+  }
   pintarFuentes(r);
   hilo.scrollTop = hilo.scrollHeight;
 }

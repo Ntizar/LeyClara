@@ -44,6 +44,24 @@ NOTA_PLAZO = ("⏱ plazo detectado: el cómputo (día inicial, días hábiles o 
               "suspensiones) NO lo calcula LeyClara. Debe verificarse en el precepto.")
 
 
+def url_precepto(norma, bloque=""):
+    """URL oficial de una norma (y de su articulo si el ancla es numerica).
+
+    Una sola fuente para todas las superficies: CLI, API, chat e informe. Se ancla
+    solo cuando el id de bloque es `a245` o `art1902`; los bis/ter usan otra
+    numeracion de ancla y un enlace roto es peor que un enlace a la norma.
+    """
+    base = f"https://www.boe.es/buscar/act.php?id={norma}"
+    return f"{base}#{bloque}" if re.fullmatch(r"(?:a|art)\d+", bloque or "") else base
+
+
+def _con_url(afirmaciones):
+    """Anade `url` a cada afirmacion: la ley citada SIEMPRE va enlazada."""
+    for a in afirmaciones:
+        a["url"] = url_precepto(a.get("norma", ""), a.get("bloque", ""))
+    return afirmaciones
+
+
 def extraer_cita(texto, max_chars=600):
     """Corta el texto en frontera de frase para que la cita sea legible y LITERAL.
 
@@ -178,13 +196,26 @@ def responder(cfg, pregunta, top_k=None):
     cands = recuperar.buscar_auto(cfg, pregunta, pedir)
 
     if not cands:
+        # "No consta" a secas es un falso negativo ciego: el usuario no sabe si no
+        # existe o si no la tenemos. Se comprueba el catalogo de existencias (12.437
+        # normas, solo metadatos) para decir QUE norma probablemente aplica.
+        try:
+            from . import existencias
+            candidatas = existencias.sugerir_amplio(cfg, pregunta)
+        except Exception:  # noqa: BLE001
+            candidatas = []
+        notas = ["No se ha localizado precepto aplicable en el corpus indexado. "
+                 "Esto NO significa que no exista la norma: significa que no está "
+                 "en las normas cargadas. Ver config.json → normas."]
+        if candidatas:
+            notas.insert(0, "Existen en el BOE normas que podrían aplicarse y NO están "
+                            "indexadas (ver «candidatas»). Sin su texto no se puede citar "
+                            "nada: hay que cargarlas para responder.")
         return {
             "pregunta": pregunta, "modo": "extractivo", "veredicto": "NO CONSTA",
             "afirmaciones": [], "fuentes": [], "grupos": [], "puentes": [],
-            "plazos": [], "normas_nombradas": nombradas,
-            "notas": ["No se ha localizado precepto aplicable en el corpus indexado. "
-                      "Esto NO significa que no exista la norma: significa que no está "
-                      "en las normas cargadas. Ver config.json → normas."],
+            "plazos": [], "normas_nombradas": nombradas, "candidatas": candidatas,
+            "notas": notas,
         }
 
     max_citas = cfg["respuesta"].get("max_citas", 3)
@@ -218,6 +249,7 @@ def responder(cfg, pregunta, top_k=None):
                      + ". Se muestra la última versión consolidada del BOE.")
 
     veredicto = "VERIFICADO" if valida else "REVISAR"
+    res = _con_url(res)
     fuentes = [_fuente(c) for c in cands]
     return {
         "pregunta": pregunta, "modo": "extractivo", "veredicto": veredicto,
@@ -301,6 +333,7 @@ def responder_llm(cfg, pregunta, top_k=None):
     finally:
         gate.cerrar()
     fuentes = [_fuente(c) for c in cands]
+    res = _con_url(res)
     return {
         "pregunta": pregunta, "modo": "llm",
         "veredicto": "VERIFICADO" if (res and valida) else

@@ -68,7 +68,8 @@ def evaluar(cfg, ruta_banco, top_k=None):
             "citados": sorted(citados), "recuperados": sorted(recuperados),
             "bloqueados": bloqueados, "plazos": r["plazos"], "notas": r["notas"],
             "fuentes": r["fuentes"], "grupos": r.get("grupos", []),
-            "puentes": r.get("puentes", []),
+            "puentes": r.get("puentes", []), "afirmaciones": r.get("afirmaciones", []),
+            "candidatas": r.get("candidatas", []),
         })
 
     def n(clase):
@@ -178,6 +179,15 @@ def escribir_informe(cfg, resultado, ruta=None):
             for g in f["grupos"]:
                 arts = ", ".join(a["titulo_bloque"] or a["bloque"] for a in g["articulos"])
                 L.append(f"  - {g['titulo_norma']} → {arts}")
+            L.append("")
+        verificado = [a for a in f.get("afirmaciones", []) if a.get("ok")]
+        if verificado:
+            L.append("- **Citas verificadas** (toda ley nombrada, enlazada):")
+            for a in verificado:
+                url = a.get("url") or _enlace({"url": f"https://www.boe.es/buscar/act.php?id={a['norma']}",
+                                               "bloque": a.get("bloque", "")},
+                                              cfg.get("informe", {}).get("incluir_enlace_oficial", True))
+                L.append(f"  - [{a['texto']} · {a['norma']}]({url})")
             L.append("")
         if f.get("puentes"):
             L.append("- 🔗 **Puentes entre normas** (leídos del texto oficial):")
