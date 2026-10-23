@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p6-feedback.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p9-media.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p14-ai.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p17-patrones.css">
 </head>
 <body class="nz">
 
@@ -28,50 +29,77 @@
 </header>
 
 <main class="nz-container nz-container--app">
+  <div class="nz-split nz-split--3-2">
 
-  <h1 class="nz-h1">Hablar con el BOE sin alucinaciones</h1>
-  <p class="nz-lead">Cada respuesta muestra el veredicto, el texto literal del precepto y el
-     enlace oficial para comprobarlo. Si no consta, lo dice.</p>
+    <section aria-label="Consulta">
+      <p class="nz-lbl">Asistente jurídico con citas literales del BOE</p>
+      <h1 class="nz-h1">Hablar con el BOE sin alucinaciones</h1>
+      <p class="nz-lead nz-lead--sm">Cada respuesta muestra su veredicto, el texto literal del
+        precepto y el enlace oficial. Si no consta, lo dice.</p>
 
-  <div class="nz-alert nz-alert--info">
-    <svg class="nz-icon nz-alert__icon" viewBox="0 0 24 24" aria-hidden="true">
-      <use href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/iconos/sprite.svg#nz-i-074"></use>
-    </svg>
-    <div class="nz-alert__body">
-      <p class="nz-alert__msg">Textos consolidados del BOE de carácter meramente informativo.
-        No es asesoramiento jurídico. Los plazos se señalan pero no se calculan.</p>
-    </div>
-  </div>
+      <div class="nz-chat" id="chat" style="height: min(68vh, 44rem)">
+        <div class="nz-chat__head">
+          <span class="nz-chat__title">Conversación</span>
+          <span class="nz-chat__status" id="chat-estado">listo</span>
+        </div>
 
-  <div class="nz-chat" id="chat">
-    <div class="nz-chat__head">
-      <span class="nz-chat__title">Consulta</span>
-      <span class="nz-chat__status" id="chat-estado">listo</span>
-    </div>
-    <div class="nz-chat__body" id="hilo">
-      <div class="nz-msg nz-msg--asistente">
-        <div class="nz-msg__body">
-          <div class="nz-msg__author">LeyClara</div>
-          <div class="nz-msg__bubble">
-            <p class="nz-msg__text">Pregunta por una norma o por un problema jurídico concreto.
-              Ejemplos: «¿Cuál es el plazo para impugnar la tasación de costas?» ·
-              «¿Qué indemnización corresponde por despido improcedente?» ·
-              «¿Cómo se aplica el incumplimiento de la Ley de Costas en el Código Civil?»</p>
+        <div class="nz-chat__body" id="hilo">
+          <div class="nz-msg nz-msg--asistente">
+            <div class="nz-msg__body">
+              <div class="nz-msg__author">LeyClara</div>
+              <div class="nz-msg__bubble">
+                <p class="nz-msg__text">Pregunta por una norma o por un problema concreto.
+                  Todo lo que responda saldrá del texto oficial, con enlace para comprobarlo.</p>
+                <div class="nz-chat__suggests">
+                  <button class="nz-chat__suggest">plazo para impugnar la tasación de costas</button>
+                  <button class="nz-chat__suggest">indemnización por despido improcedente</button>
+                  <button class="nz-chat__suggest">incumplimiento de la Ley de Costas</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nz-chat__foot">
+          <div class="nz-prompt">
+            <textarea class="nz-prompt__input" id="entrada" rows="2"
+              placeholder="Escribe tu pregunta jurídica…" aria-label="Pregunta jurídica"></textarea>
+            <button class="nz-prompt__send" id="enviar">Enviar</button>
           </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <aside aria-label="Fuentes y estado">
+      <div class="nz-panel">
+        <div class="nz-panel__cabecera">
+          <span class="nz-panel__titulo">Fuentes de esta respuesta</span>
+          <span class="nz-panel__sub" id="fuentes-cuenta">sin consulta</span>
+        </div>
+        <div class="nz-panel__cuerpo" id="fuentes">
+          <p class="nz-lbl">Aún no has preguntado nada. Aquí aparecerán los preceptos citados,
+            cada uno con su enlace oficial al BOE para comprobarlo a mano.</p>
+        </div>
+      </div>
+
+      <div class="nz-panel">
+        <div class="nz-panel__cabecera">
+          <span class="nz-panel__titulo">Cómo se verifica</span>
+        </div>
+        <div class="nz-panel__cuerpo">
+          <p class="nz-prose">Tres comprobaciones por cita: que la norma exista, que el artículo
+            exista dentro de ella y que el texto citado aparezca literalmente. Si alguna falla,
+            la respuesta se queda en «no consta».</p>
+        </div>
+      </div>
+
+      <div class="nz-callout nz-callout--note">
+        <p class="nz-prose">Textos consolidados del BOE de carácter meramente informativo.
+          No es asesoramiento jurídico. Los plazos se señalan pero no se calculan.</p>
+      </div>
+    </aside>
+
   </div>
-
-  <div class="nz-prompt">
-    <textarea class="nz-prompt__input" id="entrada" rows="2"
-      placeholder="Escribe tu pregunta jurídica…" aria-label="Pregunta jurídica"></textarea>
-    <button class="nz-prompt__send" id="enviar">Enviar</button>
-  </div>
-
-  <p class="nz-lbl">Cada cita se comprueba con tres asserts contra el texto oficial: la norma existe,
-    el artículo existe y la cita aparece literalmente. Lo que no pasa el gate, no se muestra.</p>
-
 </main>
 
 <footer class="nz-container">
@@ -87,22 +115,18 @@ const enviar = document.getElementById('enviar');
 const estadoChat = document.getElementById('chat-estado');
 const modoLLM = document.getElementById('modo-llm');
 const modoEtiqueta = document.getElementById('modo-etiqueta');
+const panelFuentes = document.getElementById('fuentes');
+const fuentesCuenta = document.getElementById('fuentes-cuenta');
 
-// El switch de Aurora necesita __track y __thumb; sin ellos el input queda inerte
-// y el usuario no puede cambiar de modo (bug real). Aquí además se etiqueta el modo
-// activo, porque "asistido" no dice lo que cuesta.
 function refrescarModo() {
-  modoEtiqueta.textContent = modoLLM.checked
-    ? 'asistido · gasta tokens'
-    : 'extractivo · 0 tokens';
-  document.getElementById('chat-estado').textContent = modoLLM.checked ? 'asistido' : 'extractivo';
+  // El modo se anuncia en el interruptor; el estado del chat solo dice si trabaja o no.
+  modoEtiqueta.textContent = modoLLM.checked ? 'asistido · gasta tokens' : 'extractivo · 0 tokens';
 }
 modoLLM.addEventListener('change', refrescarModo);
 
 fetch('/api/estado').then(r => r.json()).then(d => {
   document.getElementById('estado-corpus').textContent =
     `${d.normas_cargadas} normas · ${d.articulos.toLocaleString('es-ES')} artículos`;
-  document.getElementById('chat-estado').textContent = d.modo;
 }).catch(() => {
   document.getElementById('estado-corpus').textContent = 'corpus no disponible';
 });
@@ -138,12 +162,6 @@ function burbuja(autor, tono) {
   return bubble;
 }
 
-const TONO = {
-  'VERIFICADO': ['nz-badge--success', '069', 'verificado'],
-  'NO CONSTA':  ['nz-badge--neutral', '073', 'no consta'],
-  'REVISAR':    ['nz-badge--warning', '072', 'revisar'],
-};
-
 function insignia(contenedor, clase, num, texto) {
   const b = el('span', 'nz-badge ' + clase);
   if (num) b.appendChild(icono(num));
@@ -152,32 +170,70 @@ function insignia(contenedor, clase, num, texto) {
   return b;
 }
 
+const VEREDICTO = {
+  'VERIFICADO': ['nz-badge--success', '069', 'verificado'],
+  'NO CONSTA':  ['nz-badge--neutral', '073', 'no consta'],
+  'REVISAR':    ['nz-badge--warning', '072', 'revisar'],
+};
+
+function urlOficial(f) {
+  const ancla = /^(a|art)\d+$/.test(f.bloque || '') ? '#' + f.bloque : '';
+  return f.url + ancla;
+}
+
+// Cita: etiqueta corta (norma · articulo) + texto literal + enlace. Sin badge repetido
+// por cita: el veredicto ya esta arriba y tres insignias iguales son ruido.
+function cita(a) {
+  const caja = el('div');
+  caja.appendChild(el('p', 'nz-lbl', `${a.texto} · ${a.norma}`));
+  caja.appendChild(el('p', 'nz-prose', '«' + a.cita + '»'));
+  return caja;
+}
+
+function pintarFuentes(r) {
+  panelFuentes.textContent = '';
+  const porNorma = new Map();
+  (r.fuentes || []).forEach(f => {
+    const url = urlOficial(f);
+    if (!porNorma.has(f.norma)) porNorma.set(f.norma, {titulo: f.titulo_norma, items: new Map()});
+    porNorma.get(f.norma).items.set(url, f.titulo_bloque || f.bloque);
+  });
+  if (!porNorma.size) {
+    panelFuentes.appendChild(el('p', 'nz-lbl', 'Sin preceptos que mostrar.'));
+    fuentesCuenta.textContent = '0 fuentes';
+    return;
+  }
+  const total = Array.from(porNorma.values()).reduce((s, n) => s + n.items.size, 0);
+  fuentesCuenta.textContent = total === 1 ? '1 cita' : `${total} citas`;
+  // Agrupado por norma: repetir el titulo de la ley por cada articulo es ruido.
+  porNorma.forEach((n, nid) => {
+    panelFuentes.appendChild(el('p', 'nz-lbl', n.titulo));
+    n.items.forEach((etiqueta, url) => {
+      const p = el('p', 'nz-prose');
+      const a = el('a', '', etiqueta + ' · ver en el BOE');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      p.appendChild(a);
+      panelFuentes.appendChild(p);
+    });
+  });
+}
+
 function pintar(r) {
   const b = burbuja('LeyClara', 'asistente');
-  const [clase, num, texto] = TONO[r.veredicto] || ['nz-badge--neutral', null, r.veredicto];
-  insignia(b, clase, num, texto);
-  b.appendChild(el('p', 'nz-msg__text',
-    r.modo === 'llm' ? `Borrador de ${r.llm_modelo}, verificado por el gate.`
-                     : 'Modo extractivo: texto literal del BOE, sin generación.'));
+  const [clase, num, texto] = VEREDICTO[r.veredicto] || ['nz-badge--neutral', null, r.veredicto];
+  const cabecera = el('p', 'nz-msg__text');
+  insignia(cabecera, clase, num, texto);
+  cabecera.appendChild(document.createTextNode(
+    r.modo === 'llm' ? `  ${r.afirmaciones.length} citas · ${r.llm_modelo} + gate`
+                     : `  ${r.afirmaciones.length} citas literales`));
+  b.appendChild(cabecera);
 
-  (r.afirmaciones || []).forEach(a => {
-    const caja = el('div', 'nz-callout');
-    const cab = el('p', 'nz-callout__title');
-    insignia(cab, a.ok ? 'nz-badge--success' : 'nz-badge--danger',
-             a.ok ? '036' : '072', a.ok ? 'cita verificada' : a.motivo);
-    caja.appendChild(cab);
-    caja.appendChild(el('p', 'nz-lbl', a.texto));
-    caja.appendChild(el('p', 'nz-prose', '«' + a.cita + '»'));
-    caja.appendChild(el('p', 'nz-lbl', `${a.norma} · ${a.bloque}`));
-    b.appendChild(caja);
-  });
+  (r.afirmaciones || []).forEach(a => b.appendChild(cita(a)));
 
   if ((r.puentes || []).length) {
-    b.appendChild(el('p', 'nz-lbl', 'Puentes entre normas (leídos del texto oficial)'));
-    r.puentes.forEach(p => {
-      b.appendChild(el('p', 'nz-prose',
-        `${p.desde} art. ${p.desde_art} hacia ${p.hacia_nombre}: «${p.evidencia.slice(0, 180)}»`));
-    });
+    b.appendChild(el('p', 'nz-lbl', 'Puentes entre normas'));
+    r.puentes.forEach(p => b.appendChild(el('p', 'nz-prose',
+      `${p.desde} art. ${p.desde_art} hacia ${p.hacia_nombre}: «${p.evidencia.slice(0, 160)}»`)));
   }
 
   if ((r.plazos || []).length) {
@@ -186,23 +242,9 @@ function pintar(r) {
       '. El cómputo no lo calcula LeyClara: verifícalo en el precepto.'));
   }
 
-  if ((r.fuentes || []).length) {
-    b.appendChild(el('p', 'nz-lbl', 'Fuente oficial'));
-    const vistos = new Set();
-    r.fuentes.forEach(f => {
-      const ancla = /^(a|art)\d+$/.test(f.bloque || '') ? '#' + f.bloque : '';
-      const url = f.url + ancla;
-      if (vistos.has(url)) return;
-      vistos.add(url);
-      const p = el('p', 'nz-lbl');
-      const a = el('a', '', url);
-      a.href = url; a.target = '_blank'; a.rel = 'noopener';
-      p.appendChild(a);
-      b.appendChild(p);
-    });
-  }
-
-  (r.notas || []).forEach(n => b.appendChild(el('p', 'nz-lbl', n)));
+  // El aviso de plazo ya se pinta en su propia linea: no repetirlo como nota.
+  (r.notas || []).filter(n => !n.startsWith('⏱')).forEach(n => b.appendChild(el('p', 'nz-lbl', n)));
+  pintarFuentes(r);
   hilo.scrollTop = hilo.scrollHeight;
 }
 
@@ -212,7 +254,7 @@ async function preguntar() {
   entrada.value = '';
   burbuja('tú', 'usuario').appendChild(el('p', 'nz-msg__text', texto));
   enviar.disabled = true;
-  estadoChat.textContent = modoLLM.checked ? 'pensando con el modelo… (~30 s)' : 'consultando…';
+  estadoChat.textContent = modoLLM.checked ? 'pensando… (~30 s)' : 'consultando…';
   try {
     const resp = await fetch('/api/preguntar', {
       method: 'POST',
@@ -228,12 +270,16 @@ async function preguntar() {
     estadoChat.textContent = 'error';
   } finally {
     enviar.disabled = false;
+    entrada.focus();
   }
 }
 
 enviar.addEventListener('click', preguntar);
 entrada.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); preguntar(); }
+});
+document.querySelectorAll('.nz-chat__suggest').forEach(b => {
+  b.addEventListener('click', () => { entrada.value = b.textContent; preguntar(); });
 });
 </script>
 </body>
