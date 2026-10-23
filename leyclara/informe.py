@@ -50,21 +50,28 @@ def evaluar(cfg, ruta_banco, top_k=None):
         recuperados = {(f["norma"], f["bloque"]) for f in r["fuentes"]}
         bloqueados = [a for a in r["afirmaciones"] if not a.get("ok")]
         esp = e.get("esperado")
+        # `esperado` puede ser un precepto o una LISTA: en derecho muchas veces varios
+        # articulos responden a la misma pregunta, y exigir uno solo convierte un
+        # acierto en falso negativo (paso con el concurso: arts. 2 y 3).
+        claves_esp = []
+        if isinstance(esp, dict):
+            claves_esp = [(esp["norma"], esp["bloque"])]
+        elif isinstance(esp, list):
+            claves_esp = [(x["norma"], x["bloque"]) for x in esp]
 
         if esp is None:
             clase = "abstencion_correcta" if r["veredicto"] == "NO CONSTA" else "falso_positivo"
+        elif any(k in citados for k in claves_esp):
+            clase = "acierto"
+        elif any(k in recuperados for k in claves_esp):
+            clase = "falso_negativo_omision"
         else:
-            clave = (esp["norma"], esp["bloque"])
-            if clave in citados:
-                clase = "acierto"
-            elif clave in recuperados:
-                clase = "falso_negativo_omision"
-            else:
-                clase = "falso_negativo_recuperacion"
+            clase = "falso_negativo_recuperacion"
 
         filas.append({
             "id": e["id"], "pregunta": e["pregunta"], "tipo": e.get("tipo", ""),
-            "esperado": esp, "clase": clase, "veredicto": r["veredicto"],
+            "esperado": (esp[0] if isinstance(esp, list) and esp else esp),
+            "esperados": claves_esp, "clase": clase, "veredicto": r["veredicto"],
             "citados": sorted(citados), "recuperados": sorted(recuperados),
             "bloqueados": bloqueados, "plazos": r["plazos"], "notas": r["notas"],
             "fuentes": r["fuentes"], "grupos": r.get("grupos", []),

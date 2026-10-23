@@ -129,21 +129,24 @@ def cmd_banco(args):
             print(f"  OK      {e['id']}  (negativa: debe abstenerse)")
             ok += 1
             continue
-        existe = con.execute(
+        claves = esp if isinstance(esp, list) else [esp]
+        faltan = [c for c in claves if not con.execute(
             "SELECT 1 FROM articulos WHERE norma_id=? AND bloque_id=?",
-            (esp["norma"], esp["bloque"])).fetchone()
-        if existe:
-            print(f"  OK      {e['id']}  {esp['norma']} · {esp['bloque']}")
+            (c["norma"], c["bloque"])).fetchone()]
+        if not faltan:
+            etiqueta = " o ".join(f"{c['norma']} · {c['bloque']}" for c in claves)
+            print(f"  OK      {e['id']}  {etiqueta}")
             ok += 1
         else:
             fallos += 1
-            print(f"  FALTA   {e['id']}  {esp['norma']} · {esp['bloque']}")
-            pista = con.execute(
-                "SELECT bloque_id, titulo_bloque FROM articulos "
-                "WHERE norma_id=? AND titulo_bloque LIKE ? LIMIT 4",
-                (esp["norma"], f"%{esp['bloque'].lstrip('a').split('bis')[0]}%")).fetchall()
-            for p in pista:
-                print(f"            ¿querías {p[0]} ({p[1]})?")
+            for c in faltan:
+                print(f"  FALTA   {e['id']}  {c['norma']} · {c['bloque']}")
+                pista = con.execute(
+                    "SELECT bloque_id, titulo_bloque FROM articulos "
+                    "WHERE norma_id=? AND titulo_bloque LIKE ? LIMIT 4",
+                    (c["norma"], f"%{c['bloque'].lstrip('a').split('bis')[0]}%")).fetchall()
+                for p in pista:
+                    print(f"            ¿querías {p[0]} ({p[1]})?")
     con.close()
     print(f"\n{ok} entradas válidas, {fallos} con referencia inexistente")
     sys.exit(1 if fallos else 0)

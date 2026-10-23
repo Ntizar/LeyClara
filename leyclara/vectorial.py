@@ -141,6 +141,26 @@ class IndiceVectorial:
         self.matriz /= normas
         self.dim = dim
 
+    def sims(self, cfg, pregunta, claves):
+        """Similitud coseno de la consulta contra un conjunto concreto de articulos.
+
+        Sirve para RERANKEAR: recuperar 50 por BM25/RRF y reordenar con el vectorial,
+        que es lo que evita perder el precepto bueno cuando queda en la cola (medido:
+        a k=50 estaba, a k=5 no).
+        """
+        if not claves:
+            return {}
+        vecs, _ = _embed(cfg, [pregunta])
+        q = self.np.array(vecs[0], dtype="float32")
+        q /= (self.np.linalg.norm(q) or 1.0)
+        indice = {c: i for i, c in enumerate(self.claves)}
+        out = {}
+        for clave in claves:
+            i = indice.get(tuple(clave))
+            if i is not None:
+                out[tuple(clave)] = float(self.matriz[i] @ q)
+        return out
+
     def buscar(self, cfg, pregunta, top_k=20, norma=None, min_sim=None):
         vecs, _ = _embed(cfg, [pregunta])
         q = self.np.array(vecs[0], dtype="float32")

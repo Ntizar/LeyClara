@@ -16,7 +16,8 @@
   },
 
   "recuperacion": {
-    "top_k": 5,
+    "top_k": 50,
+    "rerank": true,
     "modo": "hibrido",
     "solo_vigentes": false,
     "min_cobertura": 0.7,

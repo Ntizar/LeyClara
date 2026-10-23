@@ -18,7 +18,7 @@
 {"id": "q09", "tipo": "plazo",     "pregunta": "¿Cuántos años tarda en prescribir el derecho de la Administración a liquidar una deuda tributaria?", "esperado": {"norma": "BOE-A-2003-23186", "bloque": "a66"}}
 {"id": "q10", "tipo": "plazo",     "pregunta": "¿Cuál es la duración mínima del arrendamiento de vivienda?", "esperado": {"norma": "BOE-A-1994-26003", "bloque": "a9"}}
 {"id": "q11", "tipo": "derecho",   "pregunta": "¿Qué derecho fundamental protege la tutela judicial efectiva sin indefensión?", "esperado": {"norma": "BOE-A-1978-31229", "bloque": "a24"}}
-{"id": "q12", "tipo": "legitimacion", "pregunta": "¿Quién está legitimado para solicitar la declaración de concurso de acreedores?", "esperado": {"norma": "BOE-A-2020-4859", "bloque": "a2"}}
+{"id": "q12", "tipo": "legitimacion", "pregunta": "¿Quién está legitimado para solicitar la declaración de concurso de acreedores?", "esperado": [{"norma": "BOE-A-2020-4859", "bloque": "a2"}, {"norma": "BOE-A-2020-4859", "bloque": "a3"}]}
 {"id": "q13", "tipo": "negativa",  "pregunta": "¿Cuál es el importe de la tasa por expedición del Documento Nacional de Identidad?", "esperado": null}
 {"id": "q14", "tipo": "negativa",  "pregunta": "¿Cuál es el límite de velocidad genérico en autovía para turismos?", "esperado": null}
 {"id": "q15", "tipo": "negativa",  "pregunta": "¿Qué plazo de garantía comercial debe dar el fabricante de un electrodoméstico?", "esperado": null}

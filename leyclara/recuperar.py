@@ -240,6 +240,21 @@ def buscar_hibrido(cfg, pregunta, top_k=None):
         f["rrf"] = round(puntos[(f["norma"], f["bloque"])], 4)
         f["nombrada"] = f["norma"] in nombradas
     filas.sort(key=lambda f: (not f["nombrada"], -f["rrf"]))
+
+    # --- RERANK denso -------------------------------------------------------
+    # Se recupera ancho (top_k=50) y se reordena con la similitud vectorial. Es lo que
+    # rescata el precepto que queda en la cola: medido en el banco, recall@50 = 12/12
+    # frente a recall@5 = 11/12. Sin este paso, subir el top_k solo mete ruido.
+    if rec.get("rerank", True) and top_k > 0 and filas:
+        try:
+            idx = _indice(cfg)
+            sims = idx.sims(cfg, pregunta, [(f["norma"], f["bloque"]) for f in filas])
+            for f in filas:
+                f["sim"] = round(sims.get((f["norma"], f["bloque"]), 0.0), 4)
+            filas.sort(key=lambda f: (not f["nombrada"], -f["sim"], -f["rrf"]))
+        except (FileNotFoundError, RuntimeError):
+            pass
+
     return filas[:top_k]
 
 
