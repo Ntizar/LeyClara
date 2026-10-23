@@ -167,30 +167,45 @@ Salida de `ingesta`: una línea por norma con artículos y cambios de vigencia.
 
 ### Estado real de esta entrega (medido, no prometido)
 
-Corpus: **11 normas · 8.853 artículos · 805 relaciones de vigencia · 8.853 vectores**.
+Corpus: **26 normas · 11.684 artículos** (9.500 citables como precepto) **· 1.429
+relaciones de vigencia · 11.684 vectores**. Cinco ramas: núcleo civil/procesal/penal/
+administrativo, laboral, consumo, energía y urbanismo/familia.
 
 | Dato | Valor |
 |---|---|
-| Texto jurídico | 8.853 artículos (~8,5 MB) |
-| Artículos con redacción modificada | ~2.900 (33 %) |
-| Índice vectorial | 8.853 × 4.096 dims · **1.381.537 tokens** de embeddings · 17 min |
+| Texto jurídico | 11.684 bloques (~24 MB), de los que **9.500 son preceptos citables** |
+| Artículos con redacción modificada | ~2.898 (33 %) |
+| Índice vectorial | 11.684 × 4.096 dims · **~1,8 M tokens** de embeddings |
 | Coste del índice | pago único; regenerar sólo cuando cambie el corpus |
+| Relaciones entre normas | 1.197 aristas (642 modifica · 253 deroga · 181 menciona · 121 conformidad) |
 
-Banco de 15 preguntas (12 con respuesta + 3 sin respuesta), **mismos parámetros, sólo
-cambia el recuperador**:
+Banco de **27 preguntas** (22 con respuesta + 5 sin respuesta) en 5 ramas. Cada paso,
+medido con el mismo banco:
 
-| Recuperador | Acierto | Recall | Falsos neg. | Falsos pos. | Abstención |
+| Configuración | Acierto | Recall | Falsos neg. | Falsos pos. | Abstención |
 |---|---|---|---|---|---|
-| Sólo léxico (BM25) | 7/12 | 0,583 | 5 | 1 | 2/3 |
-| **Híbrido (BM25 + vectorial + RRF)** | **11/12** | **0,917** | **1** | 1 | 2/3 |
+| Sólo léxico (BM25), 11 normas, banco 15 | 7/12 | 0,583 | 5 | 1 | 2/3 |
+| Híbrido (BM25 + vectorial + RRF), 11 normas | 11/12 | 0,917 | 1 | 1 | 2/3 |
+| Híbrido, top_k 50 + rerank denso | 12/12 | 1,000 | 0 | 1 | 2/3 |
+| + 15 normas nuevas y banco de 27 | 20/22 | 0,909 | 2 | 2 | 3/5 |
+| **+ filtro de citabilidad (`tipo = 'precepto'`)** | 21/22 | 0,955 | 1 | 2 | 3/5 |
+| **+ banco corregido (art. 4 RD 244/2019)** | **22/22** | **1,000** | **0** | 2 | 3/5 |
+| **+ C11 tipo de dato y C12 verde sin cita** | **22/22** | **1,000** | **0** | **1** | **4/5** |
 
-**+58 % de recall sin empeorar la precisión.** Ese es el trabajo de la capa vectorial: los
-5 falsos negativos que el léxico no veía («pena por homicidio» frente a «castigado con la
-pena de…») los resuelve el embedding.
+Dos lecciones que costaron medidas reales, no opiniones:
 
-El único falso positivo que queda está identificado: *"¿importe de la tasa del DNI?"*.
-Y el único falso negativo restante también: es una pregunta cuyo precepto no está en las
-11 normas cargadas.
+1. **Ampliar el corpus empeora la métrica antes de mejorarla.** Con 26 normas el recall
+   cayó de 1,000 a 0,909 — no porque el motor empeorara, sino porque el banco nuevo hacía
+   preguntas más difíciles. Un banco que sólo crece en aciertos no mide nada.
+2. **La recuperación estaba citando preámbulos y encabezados de capítulo.** 2.184 de los
+   11.684 bloques no son preceptos, y el top-3 de «autoconsumo» era el preámbulo del
+   RD 244/2019. Filtrar por `tipo = 'precepto'` es una línea de SQL y valía 0,046 de recall.
+
+El único falso positivo que queda está identificado y medido: *«¿qué plazo de garantía
+comercial debe dar el fabricante de un electrodoméstico?»* cita el art. 127 bis del
+TRLGDCU («repuestos durante **diez años**»). El dato existe en el corpus, pero es de otro
+sujeto. Cerrarlo requiere verificación semántica del par pregunta-cita, no otra regla
+léxica. Está en `HARNESS.md` §7 como deuda declarada.
 
 ### El falso positivo que trae el vectorial (y cómo se corta)
 
@@ -413,6 +428,41 @@ es el extractivo.
 
 ---
 
+## 8. El harness: qué debe cumplir
+
+`HARNESS.md` es el **contrato de aceptación** del proyecto: 10 criterios (C1–C10) con
+umbral medible, el esquema de respuesta y los cinco tipos de respuesta que buscamos
+(extractiva, multi-norma con puente, abstención informada, vigencia histórica y caso
+aplicado).
+
+| Criterio | Umbral |
+|---|---|
+| C1 · ninguna afirmación sin cita literal | 0 excepciones |
+| C2 · el gate distingue paráfrasis de invención | 100 % en tests |
+| C3 · toda ley nombrada, enlazada | 0 sin enlace |
+| C4 · recall@k en el banco | ≥ 0,95 |
+| C5 · abstención correcta | ≥ 0,90 |
+| C6 · falsos positivos en negativas | 0 |
+| C7 · «no consta» dice qué falta | 100 % |
+| C8 · plazos señalados, nunca calculados | 100 % |
+| C9 · UI en auditor y móvil medido | 0 fallos |
+| C10 · banco validado contra el corpus | 0 referencias |
+
+El informe (`informes/`) es el entregable: métricas, **huecos detectados**, detalle por
+pregunta con cita y enlace, y candidatas no cargadas.
+
+## 8b. Grafo de relaciones
+
+```bash
+python -m leyclara grafo        # exporta informes/grafo-normas.dot
+# visual: python -m leyclara servir → http://127.0.0.1:8788/grafo
+```
+
+Aristas, todas de datos oficiales: **modifica** y **deroga** (del `/analisis` del BOE),
+**se dicta de conformidad**, y **menciona** (una norma nombra a otra del corpus en su
+texto. Las aristas hacia normas no cargadas salen discontinuas: son el mapa de lo que
+falta.
+
 ## 9. Estructura
 
 ```
@@ -427,9 +477,14 @@ LeyClara/
 │   ├── recuperar.py         BM25 (FTS5) + vectorial con fusión RRF
 │   ├── vectorial.py         embeddings (qwen3-embedding) + índice coseno en numpy
 │   ├── verificar.py         GATE (3 asserts)
+│   ├── grafo.py             relaciones entre normas (DOT + JSON para la web)
+│   ├── existencias.py       catálogo de las 12.437 normas del BOE (cobertura)
 │   ├── responder.py         composición extractiva / modo LLM
 │   ├── informe.py           harness + informe markdown
-│   └── cli.py               init · ingesta · estado · pregunta · banco · evaluar
+│   └── cli.py               init · ingesta · estado · vectorial · servir · grafo · pregunta · banco · evaluar
+├── HARNESS.md               qué debe cumplir el sistema y qué respuesta buscamos
+├── web/index.html           chat (Aurora)
+├── web/grafo.html           grafo de relaciones (canvas)
 ├── pruebas/test_harness.py  14 pruebas sin red
 ├── informes/                informes generados (evidencia, se versiona)
 └── corpus/                  generado, NO se versiona (regenerable)
@@ -463,8 +518,9 @@ No se trocea por número de caracteres ni por tokens: **la unidad citable es el 
 
 ## 11. Limitaciones declaradas
 
-1. **El `min_cobertura` y el `min_similitud` están calibrados sobre 15 preguntas.** Sirven
-   como punto de partida, no como verdad. Con 50 preguntas los números cambiarán.
+1. **Los umbrales están calibrados sobre 27 preguntas.** Sirven como punto de partida, no
+   como verdad: cada rama nueva que se añade ha destapado un fallo que el banco anterior
+   no veía. Un banco pequeño se aprueba solo.
 2. **Sin cómputo de plazos**. Detecta y señala; no calcula.
 3. **Cobertura = lo que hay en `config.json`**. "No consta" puede significar "no está cargada".
 4. **El gate valida citas, no razonamientos.** Un enlace entre normas puede ser literalmente
@@ -472,6 +528,11 @@ No se trocea por número de caracteres ni por tokens: **la unidad citable es el 
 5. **Desfase de consolidación**: hasta 1-3 días hábiles desde la publicación de una modificación.
 6. **El modo `llm` cuesta ~11.000 tokens por consulta** y depende de un modelo de razonamiento
    (los modelos "flash" sin razonamiento devolvieron vacío en las pruebas).
+7. **Queda 1 falso positivo conocido** (C6 ❌): un dato que existe en el corpus pero
+   pertenece a otro sujeto. Es el límite del filtro léxico de tipo de dato; se cierra con
+   verificación semántica del par pregunta-cita (`HARNESS.md` §7).
+8. **Sólo la última versión consolidada.** No se puede preguntar «qué decía en 1995»
+   aunque el XML del BOE trae todas las `<version>`: no se guardan.
 
 ---
 

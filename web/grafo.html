@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es" data-nz-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeyClara — grafo de relaciones entre normas</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/tokens.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p1-layout.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p2-navigation.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p3-typography.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p4-actions.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p5-forms.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p6-feedback.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p14-ai.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Ntizar/Aurora@v10.1.0/packs/p17-patrones.css">
+</head>
+<body class="nz">
+
+<header class="nz-navbar">
+  <a class="nz-navbar__brand" href="/">LeyClara</a>
+  <nav class="nz-navbar__links">
+    <span class="nz-badge nz-badge--neutral" id="resumen">cargando grafo…</span>
+    <a class="nz-btn nz-btn--ghost nz-btn--sm" href="/">Volver al chat</a>
+  </nav>
+</header>
+
+<main class="nz-container nz-container--app">
+  <h1 class="nz-h1">Grafo de relaciones entre normas</h1>
+  <p class="nz-lead nz-lead--sm">Cada arista es un dato oficial: modificaciones y derogaciones
+    del análisis del BOE, remisiones del texto y menciones entre leyes del corpus.</p>
+
+  <div id="leyenda" class="nz-chat__suggests"></div>
+
+  <p class="nz-lbl">
+    <label class="nz-checkbox">
+      <input type="checkbox" id="ver-externas">
+      <span>incluir aristas hacia normas que no están cargadas</span>
+    </label>
+  </p>
+
+  <div class="nz-panel">
+    <div class="nz-panel__cabecera">
+      <span class="nz-panel__titulo">Mapa</span>
+      <span class="nz-panel__sub" id="detalle">pasa el ratón por un nodo</span>
+    </div>
+    <div class="nz-panel__cuerpo">
+      <canvas id="lienzo" style="width:100%;height:min(64vh,42rem);display:block"></canvas>
+    </div>
+  </div>
+</main>
+
+<footer class="nz-container">
+  <p class="nz-lbl">Basado en datos de la Agencia Estatal Boletín Oficial del Estado —
+    <a href="https://www.boe.es">boe.es</a> · Hecho con ❤️ por David Antizar</p>
+</footer>
+
+<script>
+const canvas = document.getElementById('lienzo');
+const ctx = canvas.getContext('2d');
+const detalle = document.getElementById('detalle');
+let nodos = [], aristas = [], leyenda = {}, raton = {x: -999, y: -999}, hover = null, dpr = 1;
+let visibles = new Set();
+
+function ajustar() {
+  dpr = window.devicePixelRatio || 1;
+  const r = canvas.getBoundingClientRect();
+  canvas.width = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  dibujar();
+}
+
+fetch('/api/grafo').then(r => r.json()).then(g => {
+  leyenda = g.leyenda || {};
+  const total = g.metricas.aristas;
+  document.getElementById('resumen').textContent =
+    `${g.metricas.normas} normas · ${total} aristas`;
+  document.getElementById('leyenda').innerHTML = '';
+  Object.entries(g.metricas.por_tipo).forEach(([tipo, n]) => {
+    const b = document.createElement('span');
+    b.className = 'nz-badge nz-badge--neutral';
+    b.textContent = `${tipo}: ${n}`;
+    document.getElementById('leyenda').appendChild(b);
+  });
+
+  const r = canvas.getBoundingClientRect();
+  nodos = g.nodos.map((n, i) => ({
+    ...n,
+    x: r.width / 2 + Math.cos(i / g.nodos.length * Math.PI * 2) * Math.min(r.width, r.height) * 0.35,
+    y: r.height / 2 + Math.sin(i / g.nodos.length * Math.PI * 2) * Math.min(r.width, r.height) * 0.35,
+    vx: 0, vy: 0,
+    r: Math.max(5, Math.min(22, Math.sqrt(n.articulos) * 0.9))
+  }));
+  const idx = new Map(nodos.map(n => [n.id, n]));
+  // Las aristas externas apuntan a normas que no tenemos: se dibujan como nodos
+  // huecos para que se VEA el hueco de cobertura (986 de 1197 aristas van fuera).
+  const externos = new Set(g.aristas.filter(a => a.externo && !idx.has(a.hacia))
+                                      .map(a => a.hacia));
+  let k = 0;
+  externos.forEach(nid => {
+    // Los nodos no cargados NO entran en la simulación: se colocan en un anillo.
+    // Con 700+ nodos las fuerzas se desbordan a NaN y el mapa se queda en blanco.
+    // OJO: forEach de un Set pasa (valor, valor, set) — NO un índice. De ahí el contador.
+    const ang = (k++ / Math.max(externos.size, 1)) * Math.PI * 2;
+    const rad = Math.min(r.width, r.height) * 0.46;
+    const n = {id: nid, titulo: 'norma no cargada', articulos: 0, externo: true, fijo: true,
+               url: 'https://www.boe.es/buscar/act.php?id=' + nid,
+               x: r.width / 2 + Math.cos(ang) * rad,
+               y: r.height / 2 + Math.sin(ang) * rad,
+               vx: 0, vy: 0, r: 4};
+    nodos.push(n); idx.set(nid, n);
+  });
+
+  const todas = g.aristas.map(a => ({...a, a: idx.get(a.desde), b: idx.get(a.hacia)}))
+                         .filter(a => a.a && a.b);
+  let visiblesInternas = new Set(nodos.map(n => n.id));
+  const pintarAristas = () => {
+    const verExternas = document.getElementById('ver-externas').checked;
+    aristas = todas.filter(a => verExternas || !a.externo);
+    visibles = new Set();
+    aristas.forEach(a => { visibles.add(a.a.id); visibles.add(a.b.id); });
+    const internas = todas.filter(a => !a.externo).length;
+    document.getElementById('detalle').textContent = verExternas
+      ? `${todas.length} aristas · ${externos.size} normas no cargadas`
+      : `${internas} aristas internas · ocultas ${todas.length - internas} hacia fuera`;
+  };
+  document.getElementById('ver-externas').addEventListener('change', () => {
+    pintarAristas(); simular(200);
+  });
+  pintarAristas();
+  ajustar();
+  simular(320);
+}).catch(e => {
+  document.getElementById('resumen').textContent = 'no se pudo cargar el grafo';
+  detalle.textContent = String(e);
+});
+
+function simular(pasos) {
+  const r = canvas.getBoundingClientRect();
+  const mv = nodos.filter(n => !n.fijo);        // solo las normas cargadas se mueven
+  for (let paso = 0; paso < pasos; paso++) {
+    for (let i = 0; i < mv.length; i++) {
+      for (let j = i + 1; j < mv.length; j++) {
+        const a = mv[i], b = mv[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let d2 = Math.max(dx * dx + dy * dy, 100);   // suelo: evita fuerzas infinitas
+        const d = Math.sqrt(d2);
+        const f = Math.min(2600 / d2, 40);
+        dx /= d; dy /= d;
+        a.vx -= dx * f; a.vy -= dy * f;
+        b.vx += dx * f; b.vy += dy * f;
+      }
+    }
+    aristas.forEach(e => {
+      if (e.a.fijo || e.b.fijo) return;
+      const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y;
+      const d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      const f = Math.max(-8, Math.min(8, (d - 120) * 0.012));
+      e.a.vx += (dx / d) * f; e.a.vy += (dy / d) * f;
+      e.b.vx -= (dx / d) * f; e.b.vy -= (dy / d) * f;
+    });
+    mv.forEach(n => {
+      n.vx = Math.max(-30, Math.min(30, n.vx + (r.width / 2 - n.x) * 0.0016));
+      n.vy = Math.max(-30, Math.min(30, n.vy + (r.height / 2 - n.y) * 0.0016));
+      n.vx *= 0.86; n.vy *= 0.86;
+      n.x += n.vx; n.y += n.vy;
+      n.x = Math.max(28, Math.min(r.width - 28, n.x));
+      n.y = Math.max(24, Math.min(r.height - 24, n.y));
+    });
+  }
+  dibujar();
+}
+
+function dibujar() {
+  const r = canvas.getBoundingClientRect();
+  ctx.clearRect(0, 0, r.width, r.height);
+
+  aristas.forEach(e => {
+    ctx.beginPath();
+    ctx.strokeStyle = leyenda[e.tipo] || '#94a3b8';
+    ctx.globalAlpha = e.externo ? 0.18 : 0.42;
+    ctx.lineWidth = e.externo ? 0.6 : 1.1;
+    if (e.externo) ctx.setLineDash([4, 4]); else ctx.setLineDash([]);
+    ctx.moveTo(e.a.x, e.a.y);
+    ctx.lineTo(e.b.x, e.b.y);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+  nodos.forEach(n => {
+    if (!visibles.has(n.id)) return;
+    ctx.beginPath();
+    if (n.externo) {
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.stroke();
+      return;
+    }
+    ctx.fillStyle = n === hover ? '#c2410c' : '#0f172a';
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fill();
+    if (n.r > 9) {
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      const etiqueta = n.titulo.length > 26 ? n.titulo.slice(0, 26) + '…' : n.titulo;
+      ctx.fillText(etiqueta, n.x, n.y + n.r + 13);
+    }
+  });
+}
+
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  raton = {x: e.clientX - r.left, y: e.clientY - r.top};
+  hover = nodos.find(n => Math.hypot(n.x - raton.x, n.y - raton.y) < n.r + 4) || null;
+  if (hover) {
+    const salientes = aristas.filter(a => a.a === hover).length;
+    const entrantes = aristas.filter(a => a.b === hover).length;
+    detalle.textContent = `${hover.titulo} · ${hover.articulos} arts · ${salientes} salientes / ${entrantes} entrantes`;
+    canvas.style.cursor = 'pointer';
+  } else {
+    detalle.textContent = 'pasa el ratón por un nodo';
+    canvas.style.cursor = 'default';
+  }
+  dibujar();
+});
+
+canvas.addEventListener('click', () => {
+  if (hover) window.open(hover.url, '_blank', 'noopener');
+});
+
+window.addEventListener('resize', () => { ajustar(); simular(120); });
+</script>
+</body>
+</html>

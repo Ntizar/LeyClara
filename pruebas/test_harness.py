@@ -10,7 +10,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from leyclara.responder import detectar_plazos, extraer_cita  # noqa: E402
+from leyclara.responder import (contiene_dato, detectar_plazos, extraer_cita,
+                                tipo_dato)  # noqa: E402
 from leyclara.verificar import Gate, canon  # noqa: E402
 
 TEXTO = ("La tasación de costas podrá ser impugnada dentro del plazo a que se refiere "
@@ -117,6 +118,50 @@ class TestCita(unittest.TestCase):
 
     def test_texto_corto_se_devuelve_entero(self):
         self.assertEqual(extraer_cita("Hola.", 600), "Hola.")
+
+
+class TestTipoDato(unittest.TestCase):
+    """C11: el precepto citado debe contener el TIPO de dato que se pregunta.
+
+    Nació del falso positivo real: «importe de la tasa del DNI» citaba el art. 648 de
+    la LEC (subasta electrónica) con cita literal y veredicto verde.
+    """
+
+    def test_detecta_importe(self):
+        self.assertIn("importe", tipo_dato("¿Cuál es el importe de la tasa del DNI?"))
+
+    def test_detecta_plazo(self):
+        self.assertIn("plazo", tipo_dato("¿Qué plazo hay para reclamar por despido?"))
+
+    def test_pregunta_generica_no_pide_dato(self):
+        self.assertEqual(tipo_dato("¿Qué dice la Ley de Costas sobre el dominio público?"),
+                         set())
+
+    def test_importe_sin_euros_no_vale(self):
+        # El art. 648 de la LEC no dice ningún importe: no puede responder a un importe.
+        self.assertFalse(contiene_dato({"importe"}, "La subasta electrónica se realizará "
+                                                    "conforme a las siguientes reglas."))
+        self.assertTrue(contiene_dato({"importe"}, "La tasa será de 12,50 euros."))
+
+    def test_plazo_necesita_duracion_real(self):
+        # «plazo» como palabra suelta no basta: hace falta una duración (cifra o letra).
+        self.assertFalse(contiene_dato({"plazo"}, "La garantía comercial tendrá el plazo "
+                                                  "que libremente se pacte."))
+        self.assertTrue(contiene_dato({"plazo"}, "El plazo será de diez años."))
+
+
+class TestVeredicto(unittest.TestCase):
+    """C12: nunca VERIFICADO sin cita. Se comprueba la regla, no la BD."""
+
+    def test_verde_exige_cita(self):
+        # Regla implementada en responder(): res vacío => NO CONSTA, nunca VERIFICADO.
+        for res, valida, esperado in (([], True, "NO CONSTA"),
+                                      ([], False, "NO CONSTA"),
+                                      ([{"cita": "x"}], True, "VERIFICADO"),
+                                      ([{"cita": "x"}], False, "REVISAR")):
+            veredicto = ("VERIFICADO" if (res and valida)
+                         else ("NO CONSTA" if not res else "REVISAR"))
+            self.assertEqual(veredicto, esperado)
 
 
 if __name__ == "__main__":

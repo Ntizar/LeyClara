@@ -16,6 +16,7 @@
   },
 
   "recuperacion": {
+    "solo_preceptos": true,
     "top_k": 50,
     "rerank": true,
     "modo": "hibrido",
@@ -37,7 +38,7 @@
 
   "respuesta": {
     "modo": "extractivo",
-    "max_citas": 3,
+    "max_citas": 6,
     "max_caracteres_cita": 600
   },
 
@@ -66,6 +67,26 @@
     { "id": "BOE-A-2010-10544", "nombre": "Ley de Sociedades de Capital (LSC)",       "nucleo": true, "alias": ["sociedades de capital", "LSC"] },
     { "id": "BOE-A-2003-23186", "nombre": "Ley General Tributaria (LGT)",             "nucleo": true, "alias": ["general tributaria", "LGT"] },
     { "id": "BOE-A-1994-26003", "nombre": "Ley de Arrendamientos Urbanos (LAU)",      "nucleo": true, "alias": ["arrendamientos urbanos", "LAU"] },
-    { "id": "BOE-A-1988-18762", "nombre": "Ley de Costas",                            "nucleo": true, "alias": ["ley de costas", "litoral", "dominio publico maritimo"] }
+    { "id": "BOE-A-1988-18762", "nombre": "Ley de Costas",                            "nucleo": true, "alias": ["ley de costas", "litoral", "dominio publico maritimo"] },
+
+    { "id": "BOE-A-1995-24292", "nombre": "Ley de Prevención de Riesgos Laborales",   "nucleo": true, "alias": ["prevencion de riesgos laborales", "LPRL", "riesgos laborales"] },
+    { "id": "BOE-A-2011-15936", "nombre": "Ley reguladora de la Jurisdicción Social", "nucleo": true, "alias": ["jurisdiccion social", "LRJS"] },
+    { "id": "BOE-A-2015-11724", "nombre": "Ley General de la Seguridad Social",       "nucleo": true, "alias": ["seguridad social", "LGSS"] },
+
+    { "id": "BOE-A-2007-20555", "nombre": "Ley General para la Defensa de los Consumidores y Usuarios", "nucleo": true, "alias": ["consumidores y usuarios", "TRLGDCU", "consumo"] },
+    { "id": "BOE-A-2011-10970", "nombre": "Ley de Contratos de Crédito al Consumo",   "nucleo": true, "alias": ["credito al consumo"] },
+    { "id": "BOE-A-1991-628",   "nombre": "Ley de Competencia Desleal",               "nucleo": true, "alias": ["competencia desleal"] },
+
+    { "id": "BOE-A-2013-13645", "nombre": "Ley del Sector Eléctrico",                 "nucleo": true, "alias": ["sector electrico", "electricidad"] },
+    { "id": "BOE-A-1998-23284", "nombre": "Ley del Sector de Hidrocarburos",          "nucleo": true, "alias": ["hidrocarburos"] },
+    { "id": "BOE-A-2019-5089",  "nombre": "Real Decreto de autoconsumo eléctrico",    "nucleo": true, "alias": ["autoconsumo"] },
+
+    { "id": "BOE-A-2015-11723", "nombre": "Ley de Suelo y Rehabilitación Urbana",     "nucleo": true, "alias": ["suelo y rehabilitacion urbana", "TRLS", "rehabilitacion urbana"] },
+    { "id": "BOE-A-1985-12534", "nombre": "Ley del Patrimonio Histórico Español",     "nucleo": true, "alias": ["patrimonio historico"] },
+    { "id": "BOE-A-2013-12913", "nombre": "Ley de Evaluación Ambiental",              "nucleo": true, "alias": ["evaluacion ambiental"] },
+
+    { "id": "BOE-A-1996-1069",  "nombre": "Ley Orgánica de Protección Jurídica del Menor", "nucleo": true, "alias": ["proteccion juridica del menor"] },
+    { "id": "BOE-A-2015-7391",  "nombre": "Ley de la Jurisdicción Voluntaria",        "nucleo": true, "alias": ["jurisdiccion voluntaria"] },
+    { "id": "BOE-A-2011-12628", "nombre": "Ley del Registro Civil",                   "nucleo": true, "alias": ["registro civil"] }
   ]
 }

@@ -43,6 +43,49 @@ RE_PLAZO = re.compile(
 NOTA_PLAZO = ("⏱ plazo detectado: el cómputo (día inicial, días hábiles o naturales, "
               "suspensiones) NO lo calcula LeyClara. Debe verificarse en el precepto.")
 
+# --- Coincidencia de TIPO DE DATO -------------------------------------------
+# Una pregunta pide un dato de un tipo (importe, plazo, porcentaje). Si el precepto
+# citado no contiene ese tipo de dato, NO responde a lo que se pregunta: es un falso
+# positivo con cita literal. Caso real que lo motivó: "importe de la tasa del DNI"
+# devolvía el art. 648 de la LEC (subasta electrónica) porque "tasa" casaba.
+RE_IMPORTE = re.compile(r"\d[\d.,]*\s*(?:euros?|€|eur\b)", re.I)
+RE_PORCENTAJE = re.compile(r"\d[\d.,]*\s*(?:%|por ?ciento|por ciento)", re.I)
+
+
+def _plano(s):
+    """Minúsculas sin tildes. OJO: solo para COMPARAR, nunca para citar."""
+    import unicodedata
+    s = unicodedata.normalize("NFKD", (s or "").lower())
+    return "".join(c for c in s if not unicodedata.combining(c))
+
+
+def tipo_dato(pregunta):
+    """Qué tipos de dato pide la pregunta. Vacío = no pide un dato concreto."""
+    p = " " + _plano(pregunta) + " "
+    tipos = set()
+    if re.search(r"\b(importe|cuanto cuesta|cuanto vale|precio|cuantia|tarifa|tasa)\b", p):
+        tipos.add("importe")
+    if re.search(r"\b(plazo|caducidad|prescripcion|cuantos dias|cuanto tiempo|"
+                 r"en que plazo|desde cuando)\b", p):
+        tipos.add("plazo")
+    if re.search(r"\b(porcentaje|tipo de interes|recargo|interes legal)\b", p):
+        tipos.add("porcentaje")
+    return tipos
+
+
+def contiene_dato(tipos, texto):
+    """¿El precepto contiene realmente el tipo de dato pedido?"""
+    if not tipos:
+        return True
+    t = texto or ""
+    if "importe" in tipos and RE_IMPORTE.search(t):
+        return True
+    if "porcentaje" in tipos and RE_PORCENTAJE.search(t):
+        return True
+    if "plazo" in tipos and RE_PLAZO.search(t):
+        return True
+    return False
+
 
 def url_precepto(norma, bloque=""):
     """URL oficial de una norma (y de su articulo si el ancla es numerica).
@@ -188,35 +231,61 @@ def seleccionar(cands, nombradas, max_citas):
     return elegidos[:max_citas]
 
 
+def _no_consta(cfg, pregunta, nombradas, notas_extra=None):
+    """Abstención INFORMADA: no solo dice que no consta, dice qué falta y qué
+    norma del BOE podría aplicarlo. Un "no consta" ciego es un falso negativo
+    disfrazado: el usuario no sabe si el dato no existe o si no lo tenemos."""
+    try:
+        from . import existencias
+        candidatas = existencias.sugerir_amplio(cfg, pregunta)
+    except Exception:  # noqa: BLE001
+        candidatas = []
+    notas = list(notas_extra or [])
+    notas.append("No se ha localizado precepto aplicable en el corpus indexado. "
+                 "Esto NO significa que no exista la norma: significa que no está "
+                 "en las normas cargadas. Ver config.json → normas.")
+    if candidatas:
+        notas.insert(0, "Existen en el BOE normas que podrían aplicarse y NO están "
+                        "indexadas (ver «candidatas»). Sin su texto no se puede citar "
+                        "nada: hay que cargarlas para responder.")
+    return {
+        "pregunta": pregunta, "modo": "extractivo", "veredicto": "NO CONSTA",
+        "afirmaciones": [], "fuentes": [], "grupos": [], "puentes": [],
+        "plazos": [], "normas_nombradas": nombradas, "candidatas": candidatas,
+        "notas": notas,
+    }
+
+
 def responder(cfg, pregunta, top_k=None):
     """Respuesta estructurada, auditable y con veredicto."""
     nombradas = recuperar.detectar_normas(cfg, pregunta)
     base = top_k or cfg["recuperacion"].get("top_k", 5)
     pedir = max(base, 3 * len(nombradas)) if len(nombradas) > 1 else base
+
+    # Guarda 1: sin terminos con contenido no hay busqueda posible. Evita que una
+    # sola palabra ("el", "coche") devuelva un precepto con insignia verde.
+    ts = recuperar.terminos(pregunta)
+    if len(ts) < 2:
+        return _no_consta(cfg, pregunta, nombradas,
+                          ["La pregunta no tiene terminos suficientes para buscar en el "
+                           "articulado: se necesitan al menos dos palabras con contenido."])
+
     cands = recuperar.buscar_auto(cfg, pregunta, pedir)
 
+    # Guarda 2: el precepto citado debe contener el TIPO de dato que se pregunta.
+    # Preguntar un importe y citar un articulo sin euros es un falso positivo con
+    # cita literal: se abstiene y se dice por que.
+    tipos = tipo_dato(pregunta)
+    if tipos and cands:
+        cands = [c for c in cands if contiene_dato(tipos, c["texto"])]
+        if not cands:
+            return _no_consta(cfg, pregunta, nombradas,
+                              [f"Los preceptos recuperados no contienen el dato pedido "
+                               f"({' / '.join(sorted(tipos))}). No se responde para no "
+                               f"dar una cifra sin respaldo literal."])
+
     if not cands:
-        # "No consta" a secas es un falso negativo ciego: el usuario no sabe si no
-        # existe o si no la tenemos. Se comprueba el catalogo de existencias (12.437
-        # normas, solo metadatos) para decir QUE norma probablemente aplica.
-        try:
-            from . import existencias
-            candidatas = existencias.sugerir_amplio(cfg, pregunta)
-        except Exception:  # noqa: BLE001
-            candidatas = []
-        notas = ["No se ha localizado precepto aplicable en el corpus indexado. "
-                 "Esto NO significa que no exista la norma: significa que no está "
-                 "en las normas cargadas. Ver config.json → normas."]
-        if candidatas:
-            notas.insert(0, "Existen en el BOE normas que podrían aplicarse y NO están "
-                            "indexadas (ver «candidatas»). Sin su texto no se puede citar "
-                            "nada: hay que cargarlas para responder.")
-        return {
-            "pregunta": pregunta, "modo": "extractivo", "veredicto": "NO CONSTA",
-            "afirmaciones": [], "fuentes": [], "grupos": [], "puentes": [],
-            "plazos": [], "normas_nombradas": nombradas, "candidatas": candidatas,
-            "notas": notas,
-        }
+        return _no_consta(cfg, pregunta, nombradas)
 
     max_citas = cfg["respuesta"].get("max_citas", 3)
     max_chars = cfg["respuesta"].get("max_caracteres_cita", 600)
@@ -248,7 +317,9 @@ def responder(cfg, pregunta, top_k=None):
                                  f"({f['n_versiones']} versiones)" for f in modificados)
                      + ". Se muestra la última versión consolidada del BOE.")
 
-    veredicto = "VERIFICADO" if valida else "REVISAR"
+    # Sin afirmaciones verificadas NO hay veredicto verde: una insignia "VERIFICADO"
+    # con cero citas es la peor salida posible (afirma sin respaldo).
+    veredicto = "VERIFICADO" if (res and valida) else ("NO CONSTA" if not res else "REVISAR")
     res = _con_url(res)
     fuentes = [_fuente(c) for c in cands]
     return {

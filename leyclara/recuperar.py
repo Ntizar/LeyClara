@@ -79,7 +79,12 @@ def buscar(cfg, pregunta, top_k=None):
     if not ts:
         return []
 
+    # Sin esto, el top-3 de "autoconsumo" son el PREÁMBULO y el ENCABEZADO del capítulo:
+    # bloques que no son preceptos y no se pueden citar como artículo.
+    solo_preceptos = rec.get("solo_preceptos", True)
     filtro = " AND n.vigencia = 'N'" if rec.get("solo_vigentes") else ""
+    if solo_preceptos:
+        filtro += " AND a.tipo = 'precepto'"
     con = sqlite3.connect(ruta)
     try:
         # Una sola pasada OR (recall) + filtro de cobertura (precision).

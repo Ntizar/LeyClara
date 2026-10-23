@@ -43,6 +43,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html"):
             return self._enviar(200, _html(), "text/html; charset=utf-8")
+        if self.path in ("/grafo", "/grafo.html"):
+            with open(os.path.join(WEB, "grafo.html"), encoding="utf-8") as f:
+                return self._enviar(200, f.read(), "text/html; charset=utf-8")
+        if self.path == "/api/grafo":
+            from . import grafo
+            return self._enviar(200, json.dumps(grafo.construir(self.cfg),
+                                                ensure_ascii=False))
         if self.path == "/api/estado":
             import sqlite3
             from . import ingesta

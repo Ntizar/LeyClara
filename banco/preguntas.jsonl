@@ -22,3 +22,15 @@
 {"id": "q13", "tipo": "negativa",  "pregunta": "¿Cuál es el importe de la tasa por expedición del Documento Nacional de Identidad?", "esperado": null}
 {"id": "q14", "tipo": "negativa",  "pregunta": "¿Cuál es el límite de velocidad genérico en autovía para turismos?", "esperado": null}
 {"id": "q15", "tipo": "negativa",  "pregunta": "¿Qué plazo de garantía comercial debe dar el fabricante de un electrodoméstico?", "esperado": null}
+{"id": "q16", "tipo": "laboral", "pregunta": "¿Cuál es el plazo para reclamar por despido ante el juzgado?", "esperado": [{"norma": "BOE-A-2011-15936", "bloque": "a103"}]}
+{"id": "q17", "tipo": "laboral", "pregunta": "¿Qué situaciones dan derecho a incapacidad temporal?", "esperado": [{"norma": "BOE-A-2015-11724", "bloque": "a169"}]}
+{"id": "q18", "tipo": "laboral", "pregunta": "¿Qué equipos de protección debe proporcionar el empresario?", "esperado": [{"norma": "BOE-A-1995-24292", "bloque": "a17"}]}
+{"id": "q19", "tipo": "consumo", "pregunta": "¿Cuál es el plazo para desistir de una compra a distancia?", "esperado": [{"norma": "BOE-A-2007-20555", "bloque": "a104"}, {"norma": "BOE-A-2007-20555", "bloque": "a102"}, {"norma": "BOE-A-2007-20555", "bloque": "a71"}]}
+{"id": "q20", "tipo": "consumo", "pregunta": "¿Qué información deben facilitar antes de firmar un crédito al consumo?", "esperado": [{"norma": "BOE-A-2011-10970", "bloque": "a10"}]}
+{"id": "q21", "tipo": "energia", "pregunta": "¿Quién tiene derecho al bono social eléctrico?", "esperado": [{"norma": "BOE-A-2013-13645", "bloque": "a45"}, {"norma": "BOE-A-2013-13645", "bloque": "dtdecima"}]}
+{"id": "q22", "tipo": "energia", "pregunta": "¿Qué modalidades de autoconsumo eléctrico existen?", "esperado": [{"norma": "BOE-A-2019-5089", "bloque": "a4"}, {"norma": "BOE-A-2019-5089", "bloque": "a5"}]}
+{"id": "q23", "tipo": "urbanismo", "pregunta": "¿Qué obligaciones tiene el propietario de un bien de interés cultural?", "esperado": [{"norma": "BOE-A-1985-12534", "bloque": "atreintayseis"}]}
+{"id": "q24", "tipo": "urbanismo", "pregunta": "¿Qué facultades tiene el propietario del suelo en situación rural?", "esperado": [{"norma": "BOE-A-2015-11723", "bloque": "a13"}]}
+{"id": "q25", "tipo": "familia", "pregunta": "¿Qué se inscribe en el Registro Civil cuando nace un hijo?", "esperado": [{"norma": "BOE-A-2011-12628", "bloque": "a44"}]}
+{"id": "q26", "tipo": "negativa", "pregunta": "¿Cuánto cuesta renovar el pasaporte español?", "esperado": null}
+{"id": "q27", "tipo": "negativa", "pregunta": "¿Qué límite de emisiones de CO2 debe cumplir un coche nuevo?", "esperado": null}

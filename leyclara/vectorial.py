@@ -140,6 +140,16 @@ class IndiceVectorial:
         normas[normas == 0] = 1.0
         self.matriz /= normas
         self.dim = dim
+        # Que bloques se pueden CITAR: preambulos, encabezados de capitulo, firmas y
+        # notas iniciales no son preceptos. Si entran en el ranking, el sistema cita
+        # un titulo de capitulo como si fuera un articulo (fallo real medido).
+        con = sqlite3.connect(self.ruta)
+        try:
+            self.citables = {(n, b) for n, b in con.execute(
+                "SELECT norma_id, bloque_id FROM articulos WHERE tipo = 'precepto'")}
+        except sqlite3.OperationalError:
+            self.citables = set()
+        con.close()
 
     def sims(self, cfg, pregunta, claves):
         """Similitud coseno de la consulta contra un conjunto concreto de articulos.
@@ -161,7 +171,8 @@ class IndiceVectorial:
                 out[tuple(clave)] = float(self.matriz[i] @ q)
         return out
 
-    def buscar(self, cfg, pregunta, top_k=20, norma=None, min_sim=None):
+    def buscar(self, cfg, pregunta, top_k=20, norma=None, min_sim=None,
+               solo_citables=True):
         vecs, _ = _embed(cfg, [pregunta])
         q = self.np.array(vecs[0], dtype="float32")
         q /= (self.np.linalg.norm(q) or 1.0)
@@ -175,6 +186,8 @@ class IndiceVectorial:
             s = float(sims[int(idx)])
             if min_sim is not None and s < min_sim:
                 break            # ordenado: a partir de aqui todo es peor
+            if solo_citables and self.citables and (nid, bid) not in self.citables:
+                continue         # preambulo, encabezado...: se ve pero no se cita
             out.append((nid, bid, s))
             if len(out) >= top_k:
                 break

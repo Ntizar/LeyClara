@@ -65,6 +65,18 @@ def cmd_vectorial(args):
     print(f"\n== {st['embebidos']} artículos embebidos · {st['tokens']:,} tokens")
 
 
+def cmd_grafo(args):
+    cfg = _cfg(args)
+    from . import grafo
+    ruta, m = grafo.exportar_dot(cfg)
+    print(f"Grafo: {m['normas']} normas · {m['aristas']} aristas · "
+          f"{m['externas']} hacia normas no cargadas")
+    for tipo, n in sorted(m["por_tipo"].items(), key=lambda x: -x[1]):
+        print(f"   {tipo:<24} {n}")
+    print(f"\nDOT: {ruta}")
+    print("Visual: python -m leyclara servir → http://127.0.0.1:8788/grafo")
+
+
 def cmd_servir(args):
     cfg = _cfg(args)
     from . import servir
@@ -187,6 +199,9 @@ def main(argv=None):
     psv = sub.add_parser("servir", help="abre el chat local en el navegador")
     psv.add_argument("--puerto", type=int, default=8788)
     psv.set_defaults(func=cmd_servir)
+
+    pg = sub.add_parser("grafo", help="exporta el grafo de relaciones entre normas (DOT)")
+    pg.set_defaults(func=cmd_grafo)
 
     pp = sub.add_parser("pregunta", help="responde una pregunta con citas verificadas")
     pp.add_argument("texto")
