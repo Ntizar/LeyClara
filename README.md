@@ -541,4 +541,8 @@ No se trocea por número de caracteres ni por tokens: **la unidad citable es el 
 LeyClara **no presta asesoramiento jurídico**. Los textos son consolidados del BOE de
 carácter meramente informativo. Lea `AVISO-LEGAL.md` antes de usar esto con clientes.
 
+Para saber **qué hemos aprendido y dónde está el techo** de esto (comparado con ISLA y con
+lo que le falta para ser una herramienta de despacho):
+`informes/2026-10-23-lecciones-y-limites.md`.
+
 > Basado en datos de la Agencia Estatal Boletín Oficial del Estado — <https://www.boe.es>
