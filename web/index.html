@@ -21,7 +21,8 @@
     <span class="nz-badge nz-badge--neutral" id="estado-corpus">cargando corpus…</span>
     <label class="nz-switch">
       <input type="checkbox" id="modo-llm">
-      <span class="nz-switch__label">modo asistido</span>
+      <span class="nz-switch__track"><span class="nz-switch__thumb"></span></span>
+      <span class="nz-switch__label" id="modo-etiqueta">extractivo · 0 tokens</span>
     </label>
   </nav>
 </header>
@@ -85,6 +86,18 @@ const entrada = document.getElementById('entrada');
 const enviar = document.getElementById('enviar');
 const estadoChat = document.getElementById('chat-estado');
 const modoLLM = document.getElementById('modo-llm');
+const modoEtiqueta = document.getElementById('modo-etiqueta');
+
+// El switch de Aurora necesita __track y __thumb; sin ellos el input queda inerte
+// y el usuario no puede cambiar de modo (bug real). Aquí además se etiqueta el modo
+// activo, porque "asistido" no dice lo que cuesta.
+function refrescarModo() {
+  modoEtiqueta.textContent = modoLLM.checked
+    ? 'asistido · gasta tokens'
+    : 'extractivo · 0 tokens';
+  document.getElementById('chat-estado').textContent = modoLLM.checked ? 'asistido' : 'extractivo';
+}
+modoLLM.addEventListener('change', refrescarModo);
 
 fetch('/api/estado').then(r => r.json()).then(d => {
   document.getElementById('estado-corpus').textContent =
@@ -199,7 +212,7 @@ async function preguntar() {
   entrada.value = '';
   burbuja('tú', 'usuario').appendChild(el('p', 'nz-msg__text', texto));
   enviar.disabled = true;
-  estadoChat.textContent = 'consultando…';
+  estadoChat.textContent = modoLLM.checked ? 'pensando con el modelo… (~30 s)' : 'consultando…';
   try {
     const resp = await fetch('/api/preguntar', {
       method: 'POST',
